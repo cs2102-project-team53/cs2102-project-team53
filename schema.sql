@@ -103,16 +103,16 @@ CREATE TABLE Sessions (
 -- VANSHIQA --
 --change_capacity()
 CREATE TABLE Updates(
-    eid INTEGER,
+    manager_eid INTEGER,
     room INTEGER,
     floor INTEGER,
 	date DATE,
     new_cap INTEGER,
-    PRIMARY KEY (eid, date, room, floor),
-    FOREIGN KEY (eid) REFERENCES Manager(eid),
+    PRIMARY KEY (manager_eid, date, room, floor),
+    FOREIGN KEY (manager_eid) REFERENCES Manager(eid),
     FOREIGN KEY (room, floor) REFERENCES MeetingRooms(room, floor)
 -- How to ensure total participation of meeting room?
---     constraint isSameDept(eid, room,floor) == 1;
+--     constraint isSameDept(manager_eid, room,floor) == 1;
 );
 
 
