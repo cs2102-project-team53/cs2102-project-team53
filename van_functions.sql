@@ -46,7 +46,7 @@ CREATE OR REPLACE FUNCTION contact_tracing(eid_in INT) RETURNS SETOF RECORD
 
 
 -- ??? CREATE TRIGGER TO RUN contact_tracing AFTER insert/update into healthDeclaration
--- CREATE TRIGGER do_contact_tracing
+-- CREATE TRIGGER trigger_contact_tracing
 --     AFTER INSERT OR UPDATE ON healthdeclaration
 --     FOR EACH ROW EXECUTE FUNCTION contact_tracing();
 
@@ -69,5 +69,25 @@ CREATE OR REPLACE FUNCTION change_capacity(floor_in int, room_in int, cap int, d
         UPDATE Updates SET (manager_eid, date, new_cap) = (m_eid, date_in, cap)
         WHERE room = room_in AND floor = floor_in;
     END;
-$$
+$$ language plpgsql;
 
+
+
+-- TRIGGER TO CHECK MANAGER UPDATING MEETING ROOM CAP IS FROM SAME DEPT AS MEETING ROOM
+CREATE OR REPLACE FUNCTION check_updating() RETURNS TRIGGER AS $$
+BEGIN
+ IF ( (select e.did FROM Employees e where e.eid = NEW.manager_eid) !=
+      (select m.did from MeetingRooms m NATURAL JOIN Updates u
+      WHERE m.room = NEW.room AND m.floor = NEW.floor))
+THEN
+    RAISE NOTICE 'Only managers from the same department can update capacity';
+    Return  NULL;
+END IF;
+END
+    $$ language plpgsql;
+
+CREATE TRIGGER trigger_check_updating
+    BEFORE INSERT OR UPDATE ON updates
+    FOR EACH ROW EXECUTE  FUNCTION check_updating();
+
+----- 
