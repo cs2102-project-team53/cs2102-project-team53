@@ -164,7 +164,7 @@ BEFORE UPDATE ON Sessions
 FOR EACH ROW
 EXECUTE FUNCTION can_approve_session();
 
-
+-- Sample usage: SELECT * FROM view_booking_report('2020-01-01', 410);
 CREATE OR REPLACE FUNCTION view_booking_report(IN input_start_date DATE, input_eid INT)
 RETURNS TABLE(floor_number INT, room_number INT, start_date DATE, start_hour TIME, is_approved BOOLEAN) AS $$
 BEGIN
@@ -176,7 +176,7 @@ BEGIN
 			ELSE TRUE
 			END
 	FROM Sessions s
-	WHERE s.date >= input_start_date AND s.booker_eid = eid
+	WHERE s.date >= input_start_date AND s.booker_eid = input_eid
 	ORDER BY s.date, s.time ASC;
 END;
 $$ LANGUAGE plpgsql;
