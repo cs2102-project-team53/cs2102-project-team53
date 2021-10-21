@@ -38,22 +38,44 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
 -- Usage: SELECT * FROM search_room('10', '2021-07-20','11:00:00','12:00:00')
 CREATE OR REPLACE FUNCTION search_room
     (IN _capacity INT, IN _date DATE, IN _start_hour TIME, IN _end_hour TIME)
-RETURNS TABLE(res_floor INT, res_room INT, res_did INT, res_capacity INT) AS $$
-
+RETURNS TABLE(floor INT, room INT, did INT, capacity INT) AS $$
 BEGIN 
-	RETURN QUERY SELECT s.floor, s.room, m.did, u.new_cap FROM Sessions s, Updates u, MeetingRooms m
-	WHERE u.room =s.room
-	AND u.floor=s.floor
-	AND m.floor=s.floor
-	AND m.room=s.room
-	AND s.date = _date 
-	AND u.new_cap >= _capacity
-	AND s.time = _start_hour;
+    RETURN QUERY
+	WITH latest_update_date AS (
+		SELECT u.room, u.floor, max(date) FROM Updates u
+		GROUP BY u.room, u.floor
+	),
+	-- Find the latest capacity of each room
+	latest_capacities AS (
+		SELECT * FROM Updates u
+		WHERE (u.room, u.floor, u.date) IN (SELECT * FROM latest_update_date)
+	),
+	-- Find all rooms which meet the required capacity
+	all_rooms AS (
+		SELECT m.room, m.floor, m.did, l.new_cap FROM MeetingRooms m, latest_capacities l  WHERE
+		m.room=l.room
+		AND m.floor=l.floor
+		AND l.new_cap>=_capacity
+	),
+	-- Find all the rooms which are occupied at the given date and time range
+	occupied_rooms AS (
+		SELECT s.room, s.floor FROM sessions s WHERE
+		s.time >= _start_hour
+		AND s.time<_end_hour
+		AND s.date=_date
+	)
+
+	SELECT * FROM all_rooms r 
+	WHERE (r.room, r.floor) NOT IN (SELECT * FROM occupied_rooms)
+	ORDER BY r.new_cap;
 END;
 $$ LANGUAGE plpgsql;
+
+
 
 
 -- Usage: SELECT * FROM view_future_meeting('2021-02-20',475)
@@ -61,7 +83,6 @@ CREATE OR REPLACE FUNCTION view_future_meeting
     (IN _start_date DATE, IN _eid INT)
 
 RETURNS TABLE(floor INT, room INT, date DATE, start_hour TIME) AS $$
-
 BEGIN 
 	RETURN QUERY 
 	
@@ -103,7 +124,7 @@ DECLARE
     has_fever BOOLEAN;
 	is_meeting_approved INT;
 	has_retired BOOLEAN;
-	current_capacity INT;
+	current_occupancy INT;
     max_capacity INT;
 BEGIN
     -- Check if employee has fever
@@ -120,7 +141,7 @@ BEGIN
 	SELECT NOT EXISTS(SELECT 1 FROM Employees e WHERE e.eid=NEW.eid AND e.resigned_date IS NULL) INTO has_retired;
 	
 	-- Find current_occupancy of meeting
-	SELECT COUNT(*) INTO current_capacity FROM Joins j 
+	SELECT COUNT(*) INTO current_occupancy FROM Joins j 
 	WHERE j.date=NEW.date
 	AND j.time=NEW.time
 	AND j.room=NEW.room
@@ -147,7 +168,7 @@ BEGIN
 	IF has_retired THEN
 	    RAISE EXCEPTION 'Employee has retired from the company!';
 	END IF;
-    IF current_capacity >= max_capacity THEN
+    IF current_occupancy >= max_capacity THEN
 	    RAISE EXCEPTION 'Sorry the room is fully booked';
 	END IF;
     RETURN NEW;
