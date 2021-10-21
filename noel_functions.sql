@@ -10,12 +10,11 @@ $$ LANGUAGE plpgsql;
 
 -- Usage: SELECT * FROM remove_department(9);
 CREATE OR REPLACE FUNCTION remove_department
-    (IN _did INT, OUT removed_did INT)
-RETURNS INT AS $$
+    (IN _did INT)
+RETURNS VOID AS $$
 BEGIN
     DELETE FROM Departments d
 	WHERE did = _did;
-	SELECT _did INTO removed_did;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -105,27 +104,41 @@ DECLARE
 	is_meeting_approved INT;
 	has_retired BOOLEAN;
 	current_capacity INT;
-    max_capacity INT:=10;
+    max_capacity INT;
 BEGIN
-    SELECT COALESCE(fever, true) INTO has_fever FROM HealthDeclaration h WHERE h.eid = New.eid  AND h.date = CURRENT_DATE;
+    -- Check if employee has fever
+	SELECT COALESCE(fever, true) INTO has_fever FROM HealthDeclaration h WHERE h.eid = New.eid  AND h.date = CURRENT_DATE;
+	
+	-- Check if meeting is approved
 	SELECT COALESCE(approver_eid, 0) INTO is_meeting_approved FROM Sessions s 
 	WHERE s.time = NEW.time
 	AND s.date = NEW.date
 	AND s.room = NEW.room
 	AND s.floor = NEW.floor;
-    SELECT NOT EXISTS(SELECT 1 FROM Employees e WHERE e.eid=NEW.eid AND e.resigned_date IS NULL) INTO has_retired;
+	
+    -- Check if employee retired
+	SELECT NOT EXISTS(SELECT 1 FROM Employees e WHERE e.eid=NEW.eid AND e.resigned_date IS NULL) INTO has_retired;
+	
+	-- Find current_occupancy of meeting
 	SELECT COUNT(*) INTO current_capacity FROM Joins j 
 	WHERE j.date=NEW.date
 	AND j.time=NEW.time
 	AND j.room=NEW.room
 	AND j.floor=NEW.floor;
-    -- Add max capacity here
+	
+    -- Find latest max capacity meeting room
+	SELECT new_cap INTO max_capacity FROM Updates u
+	WHERE u.room=NEW.room and u.floor=NEW.floor AND date=(SELECT max(date) FROM Updates
+	GROUP BY room, floor
+	HAVING room=NEW.room and floor=NEW.floor
+	);
+								   
   
     IF has_fever THEN
         RAISE EXCEPTION 'Employee with fever cannot join meeting';
         RETURN NULL;
     END IF;
-	IF NEW.date < CURRENT_DATE THEN
+	IF NEW.date > CURRENT_DATE THEN
 	    RAISE EXCEPTION 'Employee can only join future meetings';
 	END IF;
 	IF is_meeting_approved<>0 THEN
@@ -172,11 +185,12 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION can_leave_meeting()
 -- Constraints for Leaving
--- 1. Cannot join approved meetings
+-- 1. Cannot leave approved meetings
 RETURNS TRIGGER AS $$
 DECLARE
 	is_meeting_approved INT;
 BEGIN
+    -- check if meeting is approved
 	SELECT COALESCE(approver_eid, 0) INTO is_meeting_approved FROM Sessions s 
 	WHERE s.time = OLD.time
 	AND s.date = OLD.date
