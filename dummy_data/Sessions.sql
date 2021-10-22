@@ -1,4 +1,4 @@
-insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('11:00:00', '2021-07-20', 1, 1, 318, null);
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('11:00:00', '2021-07-20', 1, 1, 318, 478);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-08-10', 2, 4, 413, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('17:00:00', '2021-06-14', 2, 2, 371, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-01-16', 2, 3, 459, null);
