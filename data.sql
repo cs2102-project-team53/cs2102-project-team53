@@ -2229,6 +2229,25 @@ insert into HealthDeclaration (date, eid, temp) values ('2021-11-19', 497, 38.8)
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-19', 498, 37.3);
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-19', 499, 41.1);
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-19', 500, 40.2);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-18', 491, 38.2);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-18', 492, 41.5);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-18', 493, 35.9);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-18', 494, 35.6);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-18', 495, 36.7);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-18', 496, 35.9);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-18', 497, 38.8);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-18', 498, 37.3);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-18', 499, 41.1);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 500, 40.2);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 491, 38.2);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 492, 41.5);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 493, 35.9);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 494, 35.6);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 495, 36.7);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 496, 35.9);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 497, 38.8);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 498, 37.3);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 499, 41.1);
 
 -- Meeting Rooms
 insert into MeetingRooms (room, floor, rname, did) values (1, 1, 'Fintone Meeting Room', 2);
@@ -2278,6 +2297,13 @@ insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values 
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('9:00:00', '2021-05-13', 1, 3, 410, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('9:00:00', '2021-05-14', 1, 3, 410, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-05-23', 2, 3, 410, null);
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-11-13', 2, 3, 410, 476);
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-11-14', 2, 3, 410, 476);
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-11-15', 2, 3, 410, 476);
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-11-16', 2, 3, 410, 476);
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-11-17', 2, 3, 410, 476);
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-11-23', 2, 3, 410, 476);
+
 
 
 -- Updates
@@ -2353,3 +2379,24 @@ insert into Joins (eid, time, date, room, floor) values (9, '9:00:00', '2021-05-
 insert into Joins (eid, time, date, room, floor) values (156, '13:00:00', '2021-05-23', 2, 3);
 insert into Joins (eid, time, date, room, floor) values (475, '13:00:00', '2021-05-23', 2, 3);
 insert into Joins (eid, time, date, room, floor) values (9, '13:00:00', '2021-05-23', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (499, '13:00:00', '2021-11-13', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (499, '13:00:00', '2021-11-14', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (499, '13:00:00', '2021-11-15', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (499, '13:00:00', '2021-11-16', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (499, '13:00:00', '2021-11-17', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (499, '13:00:00', '2021-11-23', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (122, '13:00:00', '2021-11-13', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (122, '13:00:00', '2021-11-14', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (122, '13:00:00', '2021-11-15', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (122, '13:00:00', '2021-11-16', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (122, '13:00:00', '2021-11-17', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (122, '13:00:00', '2021-11-23', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (133, '13:00:00', '2021-11-13', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (133, '13:00:00', '2021-11-14', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (133, '13:00:00', '2021-11-15', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (133, '13:00:00', '2021-11-16', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (133, '13:00:00', '2021-11-17', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (133, '13:00:00', '2021-11-23', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (2, '13:00:00', '2021-11-13', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (2, '13:00:00', '2021-11-17', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (2, '13:00:00', '2021-11-23', 2, 3);

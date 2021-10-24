@@ -998,11 +998,6 @@ insert into HealthDeclaration (date, eid, temp) values ('2021-11-19', 497, 38.8)
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-19', 498, 37.3);
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-19', 499, 41.1);
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-19', 500, 40.2);
-insert into HealthDeclaration (date, eid, temp) values ('2021-11-19', 486, 42.5);
-insert into HealthDeclaration (date, eid, temp) values ('2021-11-19', 487, 35.1);
-insert into HealthDeclaration (date, eid, temp) values ('2021-11-19', 488, 42.2);
-insert into HealthDeclaration (date, eid, temp) values ('2021-11-19', 489, 43.0);
-insert into HealthDeclaration (date, eid, temp) values ('2021-11-19', 490, 40.3);
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-18', 491, 38.2);
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-18', 492, 41.5);
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-18', 493, 35.9);
