@@ -55,3 +55,8 @@ insert into Joins (eid, time, date, room, floor) values (9, '9:00:00', '2021-05-
 insert into Joins (eid, time, date, room, floor) values (156, '13:00:00', '2021-05-23', 2, 3);
 insert into Joins (eid, time, date, room, floor) values (475, '13:00:00', '2021-05-23', 2, 3);
 insert into Joins (eid, time, date, room, floor) values (9, '13:00:00', '2021-05-23', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (499, '13:00:00', '2021-11-17', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (498, '13:00:00', '2021-11-17', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (490, '13:00:00', '2021-11-17', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (491, '13:00:00', '2021-11-17', 2, 3);
+insert into Joins (eid, time, date, room, floor) values (499, '13:00:00', '2021-11-21', 2, 3);

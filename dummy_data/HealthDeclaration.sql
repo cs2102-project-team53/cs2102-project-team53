@@ -1017,4 +1017,8 @@ insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 496, 35.9)
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 497, 38.8);
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 498, 37.3);
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 499, 41.1);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-22', 499, 41.1);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-20', 499, 41.1);
+
+
 

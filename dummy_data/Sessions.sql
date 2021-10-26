@@ -30,3 +30,7 @@ insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values 
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('9:00:00', '2021-05-13', 1, 3, 410, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('9:00:00', '2021-05-14', 1, 3, 410, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-05-23', 2, 3, 410, null);
+
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-11-17', 2, 3, 499, 476);
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-11-21', 2, 3, 499, 476);
+
