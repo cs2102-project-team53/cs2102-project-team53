@@ -98,8 +98,8 @@ $$ LANGUAGE plpgsql;
 
 -- ??? CREATE TRIGGER TO RUN contact_tracing AFTER insert/update into healthDeclaration
 -- CREATE TRIGGER trigger_contact_tracing
---     AFTER INSERT OR UPDATE ON healthdeclaration
---     FOR EACH ROW EXECUTE FUNCTION contact_tracing();
+--     AFTER INSERT OR UPDATE ON HealthDeclaration
+--     FOR EACH ROW EXECUTE FUNCTION contact_tracing() WHEN (NEW.fever);
 
 -- This routine is used to find all employees that do not comply with the daily health declaration (i.e., to snitch).
 -- RETURNs: The routine RETURNs a table containing all employee ID that do not declare their temperature at least once FROM the start date 
