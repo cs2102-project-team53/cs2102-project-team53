@@ -2,6 +2,9 @@
 --unbook_room()
 --approve_meeting()
 --view_booking_report()
+
+-- TEST QUERY: select * from book_room(1, 1, '2021-12-19', '10:00:00', '14:00:00', 318);  
+
 DROP FUNCTION IF EXISTS book_room;
 CREATE OR REPLACE FUNCTION book_room(IN floor_number INT, room_number INT, start_date DATE, start_hour TIME, end_hour TIME, eid INT)
 RETURNS VOID AS $$
@@ -11,7 +14,7 @@ DECLARE
 BEGIN
 	WHILE start_time < end_time LOOP
 		INSERT INTO Sessions(time, date, room, floor, booker_eid) VALUES (start_time, start_date, room_number, floor_number, eid);
-		start_time := start_time + "01:00:00";
+		start_time := start_time + '01:00:00'; -- ** Can only use single quotes.
 	END LOOP;
 END;
 $$ LANGUAGE plpgsql;
@@ -25,6 +28,8 @@ $$ LANGUAGE plpgsql;
 -- 5. Can only book room for future meetings/dates [25]
 -- 6. Booker must not be resigned [34]
 -- Do we need to check if booker is already in another meeting? since he will be auto added into this booking's meeting
+
+-- ** the latest schema now uses booker_eid instead of eid.
 CREATE OR REPLACE FUNCTION can_book_room()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -34,16 +39,16 @@ DECLARE
 	has_resigned BOOLEAN;
 BEGIN
 	-- Check if Booker has a fever
-	SELECT hd.fever INTO has_fever FROM HealthDeclaration hd WHERE hd.eid = NEW.eid AND hd.date = CURRENT_DATE;
+	SELECT hd.fever INTO has_fever FROM HealthDeclaration hd WHERE hd.eid = NEW.booker_eid AND hd.date = CURRENT_DATE;
 	
 	-- Check if Employee is a Booker
-	SELECT COUNT(*) INTO is_booker FROM Booker b WHERE b.eid = NEW.eid;
+	SELECT COUNT(*) INTO is_booker FROM Booker b WHERE b.eid = NEW.booker_eid;
 	
 	-- Check if Booking is a future date
 	is_future_date := (NEW.date > CURRENT_DATE);
 	
 	-- Check if Booker has resigned
-	has_resigned := (SELECT e.resigned_date FROM Employees e WHERE e.eid = NEW.eid)	IS NOT NULL;
+	has_resigned := (SELECT e.resigned_date FROM Employees e WHERE e.eid = NEW.booker_eid)	IS NOT NULL;
 	
 	IF has_fever THEN
 		RAISE EXCEPTION 'Bookers with a fever cannot book a room';
@@ -60,6 +65,8 @@ BEGIN
 	IF has_resigned THEN
 		RAISE EXCEPTION 'Resigned employees cannot book a room';
 	END IF;
+
+	RETURN NEW; -- ** Need to RETURN NEW for the insert to go through
 END;
 $$ LANGUAGE plpgsql;
 
@@ -68,6 +75,8 @@ CREATE TRIGGER check_booking_constraints
 BEFORE INSERT ON Sessions
 FOR EACH ROW EXECUTE FUNCTION can_book_room();
 
+
+-- ** TEST QUERY: select * from unbook_room(1, 1, '2021-12-19', '10:00:00', '12:00:00', 318);
 DROP FUNCTION IF EXISTS unbook_room;
 CREATE OR REPLACE FUNCTION unbook_room(IN floor_number INT, room_number INT, start_date DATE, start_hour TIME, end_hour TIME, eid INT)
 RETURNS VOID AS $$
@@ -123,22 +132,22 @@ CREATE OR REPLACE FUNCTION can_approve_session()
 RETURNS TRIGGER AS $$
 DECLARE
 	is_manager INT;
-	is_same_department BOOLEAN;
+	is_same_department INT;
 	approver_has_resigned BOOLEAN;
 	is_future_date BOOLEAN;
 BEGIN	
 	-- Check if Employee is a Manager
-	SELECT COUNT(*) INTO is_manager FROM Manager m WHERE m.eid = NEW.eid;
+	SELECT COUNT(*) INTO is_manager FROM Manager m WHERE m.eid = NEW.approver_eid;
 	
 	-- Check if Manager is in the same Department as the Session
 	SELECT COUNT(*) INTO is_same_department FROM MeetingRooms mr, Employees e 
-	WHERE e.eid = NEW.eid AND mr.did = e.did AND mr.floor = NEW.floor_number AND mr.room = NEW.room_number;
+	WHERE e.eid = NEW.approver_eid AND mr.did = e.did AND mr.floor = NEW.floor AND mr.room = NEW.room;
 	
 	-- Check if Booking is a future date
 	is_future_date := (NEW.date > CURRENT_DATE);
 	
 	-- Check if Manager has resigned
-	approver_has_resigned := (SELECT e.resigned_date FROM Employees e WHERE e.eid = NEW.eid)	IS NOT NULL;
+	approver_has_resigned := (SELECT e.resigned_date FROM Employees e WHERE e.eid = NEW.approver_eid) IS NOT NULL;
 	
 	IF is_manager = 0 THEN
 		RAISE EXCEPTION 'Employee is not a Manager';
@@ -155,6 +164,8 @@ BEGIN
 	IF approver_has_resigned THEN
 		RAISE EXCEPTION 'Resigned Managers cannot approve a Session';
 	END IF;
+
+	RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
