@@ -1,7 +1,4 @@
 -- Example usage: SELECT * FROM add_employee('kevin', 88735936, 'SENIOR', 1);
--- ** Added a REPLACE(ename, ' ', '') so the spaces between first and last name are trimmed
--- ** TO ADD: IF NAME ALREADY EXISTS, ADD NUMBER TO EMAIL ID.
--- ** T0 ADD: DONT ADD TO EMPLOYEES IF KIND IS NOT 'JUNIOR', 'SENIOR' OR 'MANAGER'
 CREATE OR REPLACE FUNCTION add_employee
     (IN ename VARCHAR(50), IN mobile_number INT, IN kind VARCHAR(50), IN did INTEGER)
 RETURNS VOID AS $$
@@ -9,10 +6,14 @@ DECLARE
     max_eid INT;
     new_eid INT;
 BEGIN
+    IF kind NOT IN ('JUNIOR', 'SENIOR', 'MANAGER') THEN
+        RETURN;
+    END IF;
+
     SELECT COALESCE(MAX(eid), 0) INTO max_eid FROM Employees; -- Defaults to 0 if there are no rows yet
     new_eid := max_eid + 1;
 
-    -- ** ADD CHECK THAT KIND IS IETHER 'JUNIOR', 'SENIOR' 'MANAGER' FIRST
+
     INSERT INTO Employees(eid, ename, email, mobile_number, did)
     VALUES (new_eid, ename, CONCAT(REPLACE(ename, ' ', ''), new_eid, '@gmail.com'), mobile_number, did);
 
