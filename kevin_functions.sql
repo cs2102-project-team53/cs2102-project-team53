@@ -10,10 +10,10 @@ BEGIN
     new_eid := max_eid + 1;
 
     INSERT INTO Employees (eid, ename, email, mobile_number, did)
-    VALUES (new_eid, ename, CONCAT(ename, '@gmail.com'), mobile_number, did);
+    VALUES (new_eid, ename, CONCAT(ename, new_eid, '@gmail.com'), mobile_number, did);
 
     IF kind = 'JUNIOR' THEN
-        INSERT INTO Junior (eid) VALUES (new_eid); -- idk if SQL smart enough to differentiate the two eid
+        INSERT INTO Junior (eid) VALUES (new_eid);
     ELSE
         INSERT INTO Booker (eid) VALUES (new_eid);
         
@@ -35,7 +35,7 @@ BEGIN
 -- update resignedDate of employee with the given eid
     UPDATE Employees e
     SET resignedDate = last_day
-    WHERE e.eid = _eid; -- idk if SQL smart enough to differentiate the two eid
+    WHERE e.eid = _eid;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -44,7 +44,7 @@ $$ LANGUAGE plpgsql;
 -- Usage: SELECT * FROM view_manager_report('2020-04-07', 1);
 CREATE OR REPLACE FUNCTION view_manager_report
     (IN start_date DATE, IN _eid INT)
-RETURNS TABLE(floor_number INT, room_number INT, date DATE, start_hour DOUBLE PRECISION, eid INT) AS $$
+RETURNS TABLE(floor_number INT, room_number INT, date DATE, start_hour TIME, eid INT) AS $$
 DECLARE
     is_manager INT;
     department INT;
@@ -91,13 +91,13 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS junior_isa_check ON junior;
 CREATE TRIGGER junior_isa_check
-BEFORE INSERT ON Junior
+BEFORE INSERT OR UPDATE ON Junior
 FOR EACH ROW
 EXECUTE FUNCTION check_employees_exclusivity();
 
 DROP TRIGGER IF EXISTS booker_isa_check ON booker;
 CREATE TRIGGER booker_isa_check
-BEFORE INSERT ON Booker
+BEFORE INSERT OR UPDATE ON Booker
 FOR EACH ROW
 EXECUTE FUNCTION check_employees_exclusivity();
 
