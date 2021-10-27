@@ -1,3 +1,8 @@
+-- Check your RETURN values for the triggers
+-- Can we assume that we will always get a HealthDeclaration entry for every Employee every day?
+-- Add constraints, definition and constraint number on top of each function
+-- Clarify on how they do grading?
+-- Do we need to care about our dummy data?
 --book_room(floor_number, room_number, date, start_hour, end_hour, employee_id)
 --unbook_room()
 --approve_meeting()
@@ -24,10 +29,10 @@ $$ LANGUAGE plpgsql;
 -- 1. Booker must not have fever [16]
 -- 2. Only Booker (ISA senior/manager) can book a room [do i check if eid exist in Booker or check both junior and booker?] [13/14]
 -- 3. Meeting room can only be booked by ONE group for given date and time (enforced by PK) [15]
--- 4. Employee booking the room automatically joins the meeting (separate AFTER trigger?) [18]
+-- 4. Employee booking the room automatically joins the meeting (separate AFTER trigger?) [18] ****
 -- 5. Can only book room for future meetings/dates [25]
 -- 6. Booker must not be resigned [34]
--- Do we need to check if booker is already in another meeting? since he will be auto added into this booking's meeting
+-- Do we need to check if booker is already in another meeting? since he will be auto added into this booking's meeting *****
 
 -- ** the latest schema now uses booker_eid instead of eid.
 CREATE OR REPLACE FUNCTION can_book_room()
@@ -75,6 +80,19 @@ CREATE TRIGGER check_booking_constraints
 BEFORE INSERT ON Sessions
 FOR EACH ROW EXECUTE FUNCTION can_book_room();
 
+-- Trigger function to add Booker into Joins after Booker adds an entry into Sessions
+CREATE OR REPLACE FUNCTION add_booker_to_joins()
+RETURNS TRIGGER AS $$
+BEGIN
+	INSERT INTO Joins(eid, time, date, room, floor) VALUES (NEW.booker_eid, NEW.time, NEW.date, NEW.room, NEW.floor);
+	RETURN NEW;
+END;
+$$ language plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_after_sessions_insert ON Sessions;
+CREATE TRIGGER trigger_after_sessions_insert
+AFTER INSERT ON Sessions
+FOR EACH ROW EXECUTE FUNCTION add_booker_to_joins();
 
 -- ** TEST QUERY: select * from unbook_room(1, 1, '2021-12-19', '10:00:00', '12:00:00', 318);
 DROP FUNCTION IF EXISTS unbook_room;
@@ -99,7 +117,50 @@ $$ LANGUAGE plpgsql;
 -- Unbooking constraints:
 -- 1. Input eid must be the same as eid of the Booking to be removed. (Enforced in unbook_room())
 -- 2. If the booking is already approved, also remove the approval (i thought if booking is removed, approval is also removed?)
--- 3. Need to remove participants of the meeting after unbooking (separate AFTER TRIGGER?)
+-- 3. Need to remove participants of the meeting after unbooking (separate AFTER TRIGGER or can just add removal of Joins in this function) ****
+-- 4. Check for future date. ****
+
+
+-- Trigger to check if a Session has a future date before unbooking
+CREATE OR REPLACE FUNCTION can_unbook_room()
+RETURNS TRIGGER AS $$
+DECLARE
+	is_future_date BOOLEAN;
+BEGIN
+	-- Check if Booking is a future date
+	is_future_date := (OLD.date > CURRENT_DATE);
+	
+	IF is_future_date = FALSE THEN
+		RAISE EXCEPTION 'Can only unbook rooms of a future date';
+	END IF;
+	RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS check_unbooking_constraints ON Sessions;
+CREATE TRIGGER check_unbooking_constraints
+BEFORE DELETE ON Sessions
+FOR EACH ROW EXECUTE FUNCTION can_unbook_room();
+
+
+-- Trigger to remove participants from Joins after deleting a Booking from Sessions
+CREATE OR REPLACE FUNCTION remove_participants_after_unbooking()
+RETURNS TRIGGER AS $$
+BEGIN
+	DELETE FROM Joins j WHERE (
+		j.time = OLD.time AND
+		j.date = OLD.date AND
+		j.room = OLD.room AND
+		j.floor = OLD.floor);
+	RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_after_sessions_delete ON Sessions;
+CREATE TRIGGER trigger_after_sessions_delete
+AFTER DELETE ON Sessions
+FOR EACH ROW EXECUTE FUNCTION remove_participants_after_unbooking();
+
 
 DROP FUNCTION IF EXISTS approve_meeting;
 CREATE OR REPLACE FUNCTION approve_meeting(IN floor_number INT, room_number INT, start_date DATE, start_hour TIME, end_hour TIME, eid INT)
@@ -123,9 +184,9 @@ $$ LANGUAGE plpgsql;
 -- Approve meeting constraints:
 -- 1. Only manager can approve meetings [20]
 -- 2. The approved meeting must be in the same Department as the Manager [21]
--- 3. Booked meeting is approved at most once (how to enforce this?) [22]
+-- 3. Booked meeting is approved at most once (how to enforce this?) [22] **** (check if approver_eid is not null, if true then skip)
 -- 4. Once approved, there should be no more changes in the participants and the participants will 
--- 	  definitely come to the meeting on the stipulated day. (how to enforce this?) [23]
+-- 	  definitely come to the meeting on the stipulated day. (already enforced in Joins) [23]
 -- 5. approver_eid in Employees table must not be resigned. [34]
 -- 6. Approved meeting must be in a future date. [27]
 CREATE OR REPLACE FUNCTION can_approve_session()
@@ -135,6 +196,7 @@ DECLARE
 	is_same_department INT;
 	approver_has_resigned BOOLEAN;
 	is_future_date BOOLEAN;
+	is_approved BOOLEAN;
 BEGIN	
 	-- Check if Employee is a Manager
 	SELECT COUNT(*) INTO is_manager FROM Manager m WHERE m.eid = NEW.approver_eid;
@@ -148,6 +210,9 @@ BEGIN
 	
 	-- Check if Manager has resigned
 	approver_has_resigned := (SELECT e.resigned_date FROM Employees e WHERE e.eid = NEW.approver_eid) IS NOT NULL;
+	
+	-- Check if Booking has been approved before
+	is_approved := (OLD.approver_eid IS NOT NULL);
 	
 	IF is_manager = 0 THEN
 		RAISE EXCEPTION 'Employee is not a Manager';
@@ -163,6 +228,10 @@ BEGIN
 	
 	IF approver_has_resigned THEN
 		RAISE EXCEPTION 'Resigned Managers cannot approve a Session';
+	END IF;
+	
+	IF is_approved THEN
+		RAISE EXCEPTION 'Booking has been approved already';
 	END IF;
 
 	RETURN NEW;
@@ -191,5 +260,6 @@ BEGIN
 	ORDER BY s.date, s.time ASC;
 END;
 $$ LANGUAGE plpgsql;
+
 
 
