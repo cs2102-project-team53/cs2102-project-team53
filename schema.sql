@@ -17,9 +17,9 @@ CREATE TABLE Employees (
     did INT NOT NULL,
     ename VARCHAR(50) NOT NULL,
     email VARCHAR(50) UNIQUE,
-    mobile_number INTEGER,
-	home_number INTEGER,
-	office_number INTEGER,
+    mobile_number NUMERIC,
+	home_number NUMERIC,
+	office_number NUMERIC,
     resigned_date DATE,
     FOREIGN KEY (did) REFERENCES Departments(did)
     -- trigger
