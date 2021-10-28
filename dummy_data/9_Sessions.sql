@@ -1,4 +1,7 @@
-insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('11:00:00', '2021-07-20', 1, 1, 318, 478);
+
+
+--Sessions
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('11:00:00', '2021-07-20', 1, 1, 318, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-08-10', 2, 4, 413, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('17:00:00', '2021-06-14', 2, 2, 371, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-01-16', 2, 3, 459, null);
@@ -30,7 +33,11 @@ insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values 
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('9:00:00', '2021-05-13', 1, 3, 410, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('9:00:00', '2021-05-14', 1, 3, 410, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-05-23', 2, 3, 410, null);
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-11-13', 2, 3, 410, 476);
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-11-14', 2, 3, 410, 476);
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-11-15', 2, 3, 410, 476);
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-11-16', 2, 3, 410, 476);
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-11-17', 2, 3, 410, 476);
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-11-23', 2, 3, 410, 476);
 
-insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-11-17', 2, 3, 499, 476);
-insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-11-21', 2, 3, 499, 476);
 

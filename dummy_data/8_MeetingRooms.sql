@@ -1,3 +1,6 @@
+
+
+-- MeetingRooms
 insert into MeetingRooms (room, floor, rname, did) values (1, 1, 'Fintone Meeting Room', 2);
 insert into MeetingRooms (room, floor, rname, did) values (1, 2, 'Daltfresh Meeting Room', 5);
 insert into MeetingRooms (room, floor, rname, did) values (1, 3, 'Namfix Meeting Room', 7);

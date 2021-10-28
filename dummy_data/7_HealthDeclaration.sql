@@ -1,3 +1,6 @@
+
+
+-- HealthDeclaration: 1000 Rows (2 declarations for each employee)
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 1, 35.7);
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 2, 40.0);
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 3, 42.2);
@@ -160,8 +163,8 @@ insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 159, 39.1)
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 160, 36.8);
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 161, 37.9);
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 162, 37.4);
-insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 163, 42.1);
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 164, 41.6);
+insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 163, 42.1);
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 165, 39.6);
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 166, 35.5);
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 167, 41.2);
@@ -1019,6 +1022,5 @@ insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 498, 37.3)
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 499, 41.1);
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-22', 499, 41.1);
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-20', 499, 41.1);
-
 
 

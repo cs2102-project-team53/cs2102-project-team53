@@ -1,3 +1,14 @@
+DELETE FROM Joins;
+DELETE FROM Updates;
+DELETE FROM Sessions;
+DELETE FROM MeetingRooms;
+DELETE FROM HealthDeclaration;
+DELETE FROM Junior;
+DELETE FROM Employees;
+DELETE FROM Departments;
+
+
+-- Departments
 insert into Departments (did, dname) values (1, 'Sales');
 insert into Departments (did, dname) values (2, 'Engineering');
 insert into Departments (did, dname) values (3, 'Marketing');
