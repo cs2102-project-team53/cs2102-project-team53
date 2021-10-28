@@ -7,6 +7,7 @@ DELETE FROM Junior;
 DELETE FROM Employees;
 DELETE FROM Departments;
 
+
 -- Departments
 insert into Departments (did, dname) values (1, 'Sales');
 insert into Departments (did, dname) values (2, 'Engineering');
@@ -821,6 +822,7 @@ insert into Junior (eid) values (298);
 insert into Junior (eid) values (299);
 insert into Junior (eid) values (300);
 
+
 -- Booker
 insert into Booker (eid) values (301);
 insert into Booker (eid) values (302);
@@ -1175,6 +1177,7 @@ insert into Senior (eid) values (448);
 insert into Senior (eid) values (449);
 insert into Senior (eid) values (450);
 
+
 -- Manager
 insert into Manager (eid) values (451);
 insert into Manager (eid) values (452);
@@ -1226,7 +1229,6 @@ insert into Manager (eid) values (497);
 insert into Manager (eid) values (498);
 insert into Manager (eid) values (499);
 insert into Manager (eid) values (500);
-
 
 -- HealthDeclaration: 1000 Rows (2 declarations for each employee)
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 1, 35.7);
@@ -1391,8 +1393,8 @@ insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 159, 39.1)
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 160, 36.8);
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 161, 37.9);
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 162, 37.4);
-insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 163, 42.1);
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 164, 41.6);
+insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 163, 42.1);
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 165, 39.6);
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 166, 35.5);
 insert into HealthDeclaration (date, eid, temp) values ('2021-10-19', 167, 41.2);
@@ -2248,8 +2250,13 @@ insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 496, 35.9)
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 497, 38.8);
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 498, 37.3);
 insert into HealthDeclaration (date, eid, temp) values ('2021-11-17', 499, 41.1);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-22', 499, 41.1);
+insert into HealthDeclaration (date, eid, temp) values ('2021-11-20', 499, 41.1);
 
--- Meeting Rooms
+
+
+
+-- MeetingRooms
 insert into MeetingRooms (room, floor, rname, did) values (1, 1, 'Fintone Meeting Room', 2);
 insert into MeetingRooms (room, floor, rname, did) values (1, 2, 'Daltfresh Meeting Room', 5);
 insert into MeetingRooms (room, floor, rname, did) values (1, 3, 'Namfix Meeting Room', 7);
@@ -2264,7 +2271,7 @@ insert into MeetingRooms (room, floor, rname, did) values (3, 3, 'Tin Meeting Ro
 insert into MeetingRooms (room, floor, rname, did) values (3, 4, 'Lotlux Meeting Room', 8);
 
 
--- Sessions
+--Sessions
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('11:00:00', '2021-07-20', 1, 1, 318, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2021-08-10', 2, 4, 413, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('17:00:00', '2021-06-14', 2, 2, 371, null);
@@ -2306,6 +2313,7 @@ insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values 
 
 
 
+
 -- Updates
 insert into Updates (manager_eid, room, floor, date, new_cap) values (482, 1, 1, '2021-10-10', 10);
 insert into Updates (manager_eid, room, floor, date, new_cap) values (490, 1, 2, '2021-10-10', 10);
@@ -2319,6 +2327,7 @@ insert into Updates (manager_eid, room, floor, date, new_cap) values (487, 3, 1,
 insert into Updates (manager_eid, room, floor, date, new_cap) values (467, 3, 2, '2021-10-10', 10);
 insert into Updates (manager_eid, room, floor, date, new_cap) values (480, 3, 3, '2021-10-10', 10);
 insert into Updates (manager_eid, room, floor, date, new_cap) values (474, 3, 4, '2021-10-10', 10);
+
 
 
 -- Joins

@@ -23,6 +23,7 @@ $$ LANGUAGE plpgsql;
 
 -- This routine is used to add a new room
 -- Usage: SELECT * FROM add_room (5, 4, 'Test', 2, 7);
+-- TODO: Add m_eid to input params
 CREATE OR REPLACE FUNCTION add_room
     (IN _room INT, IN _floor INT, IN _rname VARCHAR(50), IN _did INT, IN _capacity INT)
 RETURNS VOID AS $$
