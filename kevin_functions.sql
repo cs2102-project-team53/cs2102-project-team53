@@ -1,4 +1,10 @@
--- Example usage: SELECT * FROM add_employee('kevin', 88735936, 'SENIOR', 1);
+-- Employee constraints:
+-- 1. Each employee must be one and only one of the three kinds of employees: junior, senior or manager. [12]
+-- 2. When an employee resign, all past records are kept. [33]
+
+
+-- This routine is used to add a new employee.
+-- Usage: SELECT * FROM add_employee('kevin', 88735936, 'SENIOR', 1);
 CREATE OR REPLACE FUNCTION add_employee
     (IN ename VARCHAR(50), IN mobile_number INT, IN kind VARCHAR(50), IN did INTEGER)
 RETURNS VOID AS $$
@@ -39,6 +45,7 @@ $$ LANGUAGE plpgsql;
 -- SELECT * FROM add_employee('Charlie Agrawal', 90915145, 'JUNIOR', 3); -- check if unique email id generated w duplicate name
 -- SELECT * FROM add_employee('Charlie', 90915145, 'JUNIR', 3); -- mispelt kind.
 
+-- This routine is used to remove an employee by setting the resigned_date to the given last_day.
 -- Usage: SELECT * FROM remove_employee(1, 'YYYY-MM-DD');
 CREATE OR REPLACE FUNCTION remove_employee
     (IN _eid INT, IN last_day DATE, OUT status INT)
@@ -54,6 +61,9 @@ $$ LANGUAGE plpgsql;
 -- SELECT * FROM remove_employee(501, '2021-06-04');
 
 
+-- This routine is to be used by manager to find all meeting rooms that 
+-- require approval with the same department as the manager. 
+-- Returns a table containing all meeting that are booked but not yet approved from the given start_date onwards.
 -- Usage: SELECT * FROM view_manager_report('2020-04-07', 1);
 CREATE OR REPLACE FUNCTION view_manager_report
     (IN start_date DATE, IN _eid INT)
