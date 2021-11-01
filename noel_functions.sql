@@ -175,7 +175,7 @@ BEGIN
         RAISE EXCEPTION 'Employee with fever cannot join meeting';
         RETURN NULL;
     END IF;
-	IF NEW.date > CURRENT_DATE THEN
+	IF NEW.date < CURRENT_DATE THEN
 	    RAISE EXCEPTION 'Employee can only join future meetings';
 	END IF;
 	IF is_meeting_approved<>0 THEN
