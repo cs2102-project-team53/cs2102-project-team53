@@ -48,7 +48,7 @@ $$ LANGUAGE plpgsql;
 -- This routine is used to remove an employee by setting the resigned_date to the given last_day.
 -- Usage: SELECT * FROM remove_employee(1, 'YYYY-MM-DD');
 CREATE OR REPLACE FUNCTION remove_employee
-    (IN _eid INT, IN last_day DATE, OUT status INT)
+    (IN _eid INT, IN last_day DATE)
 RETURNS VOID AS $$
 BEGIN
 -- update resignedDate of employee with the given eid
