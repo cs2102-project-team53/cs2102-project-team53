@@ -2821,12 +2821,12 @@ insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values 
 
 -- Updates
 insert into Updates (manager_eid, room, floor, date, new_cap) values (482, 1, 1, '2019-10-10', 10);
-insert into Updates (manager_eid, room, floor, date, new_cap) values (490, 1, 2, '2019-10-10', 10);
-insert into Updates (manager_eid, room, floor, date, new_cap) values (499, 1, 3, '2019-10-10', 10);
-insert into Updates (manager_eid, room, floor, date, new_cap) values (493, 1, 4, '2019-10-10', 10);
+insert into Updates (manager_eid, room, floor, date, new_cap) values (490, 1, 2, '2019-10-10', 11);
+insert into Updates (manager_eid, room, floor, date, new_cap) values (499, 1, 3, '2019-10-10', 9);
+insert into Updates (manager_eid, room, floor, date, new_cap) values (493, 1, 4, '2019-10-10', 8);
 insert into Updates (manager_eid, room, floor, date, new_cap) values (470, 2, 1, '2019-10-10', 10);
 insert into Updates (manager_eid, room, floor, date, new_cap) values (478, 2, 2, '2019-10-10', 10);
-insert into Updates (manager_eid, room, floor, date, new_cap) values (491, 2, 3, '2019-10-10', 10);
+insert into Updates (manager_eid, room, floor, date, new_cap) values (491, 2, 3, '2019-10-10', 8);
 insert into Updates (manager_eid, room, floor, date, new_cap) values (473, 2, 4, '2019-10-10', 10);
 insert into Updates (manager_eid, room, floor, date, new_cap) values (487, 3, 1, '2019-10-10', 10);
 insert into Updates (manager_eid, room, floor, date, new_cap) values (467, 3, 2, '2019-10-10', 10);
