@@ -14,8 +14,8 @@ DROP FUNCTION IF EXISTS book_room;
 CREATE OR REPLACE FUNCTION book_room(IN floor_number INT, room_number INT, start_date DATE, start_hour TIME, end_hour TIME, eid INT)
 RETURNS VOID AS $$
 DECLARE
-	start_time TIME := start_hour;
-	end_time TIME := end_hour;
+	start_time TIME := (SELECT date_trunc('hour', start_hour + interval '0 minute'));
+	end_time TIME := (SELECT date_trunc('hour', end_hour + interval '59 minute'));
 BEGIN
 	WHILE start_time < end_time LOOP
 		INSERT INTO Sessions(time, date, room, floor, booker_eid) VALUES (start_time, start_date, room_number, floor_number, eid);
@@ -99,8 +99,8 @@ DROP FUNCTION IF EXISTS unbook_room;
 CREATE OR REPLACE FUNCTION unbook_room(IN floor_number INT, room_number INT, start_date DATE, start_hour TIME, end_hour TIME, eid INT)
 RETURNS VOID AS $$
 DECLARE
-	start_time TIME := start_hour;
-	end_time TIME := end_hour;
+	start_time TIME := (SELECT date_trunc('hour', start_hour + interval '0 minute'));
+	end_time TIME := (SELECT date_trunc('hour', end_hour + interval '59 minute'));
 BEGIN
 	WHILE start_time < end_time LOOP
 		DELETE FROM Sessions 
@@ -166,8 +166,8 @@ DROP FUNCTION IF EXISTS approve_meeting;
 CREATE OR REPLACE FUNCTION approve_meeting(IN floor_number INT, room_number INT, start_date DATE, start_hour TIME, end_hour TIME, eid INT)
 RETURNS VOID AS $$
 DECLARE
-	start_time TIME := start_hour;
-	end_time TIME := end_hour;
+	start_time TIME := (SELECT date_trunc('hour', start_hour + interval '0 minute'));
+	end_time TIME := (SELECT date_trunc('hour', end_hour + interval '59 minute'));
 BEGIN
 	WHILE start_time < end_time LOOP
 		UPDATE Sessions s
