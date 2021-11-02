@@ -113,69 +113,93 @@ DECLARE
 	num_days INT;
 BEGIN
    num_days = endDate - startDate + 1;
-   
    RETURN QUERY
    --count how many times each employee declared temperature and RETURN if count < numDays
-   -- **You have't removed cases WHERE count =num_days: can just remove cases WHERE days=0 in the final SELECT statement
    WITH num_declarations AS ( 
 	     SELECT h.eid, count(*) AS num_declared FROM HealthDeclaration h
 		 WHERE h.date >= startDate AND h.date <= endDate AND h.temp IS NOT NULL
 		 GROUP BY h.eid
    )
-    SELECT e.eid,
+
+    SELECT * FROM (SELECT e.eid,
 		  CASE WHEN e.eid NOT IN (SELECT t.eid FROM num_declarations t)
 			   THEN num_days
 			   ELSE num_days - (SELECT t.num_declared FROM num_declarations t WHERE t.eid=e.eid)
 		  END AS num_undeclared
     FROM Employees e, num_declarations t
-    WHERE e.eid = t.eid
-    AND t.num_declared < num_days
-    ORDER BY num_undeclared DESC;
+    ORDER BY num_undeclared DESC) t2 WHERE t2.num_undeclared >0 ;
 END;
 $$ language plpgsql;
-SELECT * FROM non_compliance('2021-11-17', '2021-11-21');
+SELECT * FROM non_compliance('2021-11-20', '2021-11-22');
 
 -- Usage: SELECT * FROM change_capacity(1, 1, 12, current_date, 499)
 CREATE OR REPLACE FUNCTION change_capacity(IN floor_in int, IN room_in int, IN cap int, IN date_in Date, IN m_eid int)
 RETURNS VOID AS
     $$
+    DECLARE
+        has_same_date_and_room INT = -1; --need to update if > 0
+        is_same_cap INT = -1; -- abort if > 0
     BEGIN
-        INSERT INTO Updates(manager_eid, room, floor, date, new_cap) VALUES (m_eid, room_in, floor_in, date_in, cap);
-    END;
+        -- An entry for the same date and room exists, but capacity is different
+        SELECT COUNT(*) INTO has_same_date_and_room FROM Updates u
+            WHERE
+                floor_in = u.floor AND
+                room_in = u.room AND
+                date_in = u.date AND
+                cap != u.new_cap;
+        -- An entry from the same date and room exists but capacity is same
+        SELECT COUNT(*) INTO is_same_cap FROM Updates u
+            WHERE
+                floor_in = u.floor AND
+                room_in = u.room AND
+                date_in = u.date AND
+                cap = u.new_cap;
+        IF(is_same_cap > 0 ) THEN
+             RAISE NOTICE 'Meeting Room already has this cap for this date. Exiting function.';
+            RETURN;
+        ELSEIF (has_same_date_and_room > 0 ) THEN
+                RAISE NOTICE 'Updating meeting room prev cap for this date';
+                UPDATE Updates SET manager_eid = m_eid, new_cap = cap
+                    WHERE
+                          (floor_in = floor AND
+                            room_in = room AND
+                            date_in = date );
+        ELSE
+            INSERT INTO Updates(manager_eid, room, floor, date, new_cap) VALUES (m_eid, room_in, floor_in, date_in, cap);
+    END IF;
+END
 $$ language plpgsql;
 
 -- Updating Constraints:
 -- 1. Manager FROM same dept only can update capacity [24]
 CREATE OR REPLACE FUNCTION do_updating_capacity() RETURNS TRIGGER AS $$
-BEGIN
-    --** I got an error here because the right half of the equality can RETURN more than 1 row 
-	-- ("ERROR:  more than one row RETURNed by a subquery used as an expression")
-	-- This is because Updates has PK (room, floor, m_eid) so if a row is inserted by a different manager, 2 rows can have same room and floor
-	-- Need to rewrite this logic
-	IF ((SELECT e.did FROM Employees e WHERE e.eid = NEW.manager_eid) NOT IN
-		  (SELECT m.did FROM MeetingRooms m NATURAL JOIN Updates u
-		  WHERE m.room = NEW.room AND m.floor = NEW.floor))
-	THEN
-		RAISE NOTICE 'Only managers FROM the same department can update capacity';
-		RETURN  NULL;
-	ELSE
-		 RETURN NEW;
-	END IF;
-END
+    DECLARE
+        correct_did INT = 0;
+    BEGIN
+        SELECT COUNT(*) INTO correct_did  from MeetingRooms m, Employees e WHERE
+                m.floor = NEW.floor AND
+                m.room = NEW.room AND
+                m.did = e.did;
+        IF (correct_did > 0) THEN
+          RETURN NEW;
+        ELSE
+            RAISE NOTICE 'Only managers from same department as meeting room can update capcity. Aborting.';
+            RETURN NULL;
+        end if;
+    END
 $$ language plpgsql;
-
 
 
 DROP TRIGGER IF EXISTS trigger_before_new_cap ON Updates;
 CREATE TRIGGER trigger_before_new_cap
 BEFORE INSERT OR UPDATE ON updates
-FOR EACH ROW 
+FOR EACH ROW
 EXECUTE FUNCTION do_updating_capacity();
 
 -- TESTING QUERIES:
 -- INSERT INTO Updates(room, floor, date, new_cap, manager_eid) VALUES (2,3 ,'2021-06-01',0, 499 ); -- manager from different dept
--- INSERT INTO Updates(room, floor, date, new_cap, manager_eid) VALUES (2,3 ,'2021-05-01',0, 494 ); -- manager from same dept
-
+-- INSERT INTO Updates(room, floor, date, new_cap, manager_eid) VALUES (2,3 ,'2021-05-02',2, 494 ); -- manager from same dept
+-- SELECT * FROM change_capacity(2,3 ,4,'2021-05-02', 494);
 
 -- Does: delete sessions which exceed the new capacity after it is updated.
 CREATE OR REPLACE FUNCTION post_updated_cap() RETURNS TRIGGER
