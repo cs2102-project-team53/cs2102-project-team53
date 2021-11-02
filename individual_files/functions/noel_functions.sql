@@ -22,39 +22,36 @@ $$ LANGUAGE plpgsql;
 
 
 -- This routine is used to add a new room
+-- As a new room requires the initial capacity to be set in updates table, a manager_eid is also required as input
 -- Usage: SELECT * FROM add_room (5, 4, 'Test', 2, 7);
--- TODO: Add m_eid to input params
 CREATE OR REPLACE FUNCTION add_room
-    (IN _room INT, IN _floor INT, IN _rname VARCHAR(50), IN _did INT, IN _capacity INT)
+    (IN _room INT, IN _floor INT, IN _rname VARCHAR(50), IN _did INT, IN _capacity INT, IN _manager_eid INT)
 RETURNS VOID AS $$
-DECLARE
-	manager_eid INT;
 BEGIN 
     -- Insert into MeetingRooms
     INSERT INTO MeetingRooms (room, floor, rname, did)
 	VALUES (_room, _floor, _rname, _did);
 	
-	-- Initialise a random manager_eid with a manger in the same department and insert room capacity into Updates
-	SELECT eid FROM employees e WHERE e.eid IN (SELECT eid FROM Manager) AND e.did=_did LIMIT 1 INTO manager_eid;
 	INSERT INTO Updates (manager_eid, room, floor, date, new_cap)
-	VALUES (manager_eid, _room, _floor, CURRENT_DATE, _capacity);	
+	VALUES (_manager_eid, _room, _floor, CURRENT_DATE, _capacity);	
 END;
 $$ LANGUAGE plpgsql;
 
 
 -- This routine is used to search for available rooms.
--- Returns: The routine returns a table containing all meeting rooms that are available from the start hour (inclusive) to the end hour (exclusive). 
+-- Returns: The routine returns a table containing all meeting rooms that are available from the start hour (inclusive) to the end hour (exclusive) on the given date. 
 --          In other words, [start hour, end hour). Note that the number of hours may be greater than 1 hour and it must be available.
--- Usage: SELECT * FROM search_room('10', '2021-07-20','11:00:00','12:00:00')
+-- Usage: SELECT * FROM search_room('7', '2022-11-27','9:15:00','11:33:00')
 CREATE OR REPLACE FUNCTION search_room
     (IN _capacity INT, IN _date DATE, IN _start_hour TIME, IN _end_hour TIME)
 RETURNS TABLE(floor INT, room INT, did INT, capacity INT) AS $$
-BEGIN 
+BEGIN
     RETURN QUERY
 
-	-- Find the latest capacity update date for each room
+	-- Find the latest capacity update date for each room before or on the _date
 	WITH latest_update_date AS (
 		SELECT u.room, u.floor, max(date) FROM Updates u
+		WHERE u.date <= _date
 		GROUP BY u.room, u.floor
 	),
 	-- Find the latest capacity of each room
@@ -72,8 +69,8 @@ BEGIN
 	-- Find all the rooms which are occupied at the given date and time range
 	occupied_rooms AS (
 		SELECT s.room, s.floor FROM sessions s WHERE
-		s.time >= _start_hour
-		AND s.time<_end_hour
+		s.time >= (SELECT date_trunc('hour', _start_hour + interval '0 minute')) --Round down _start_hour
+		AND s.time< (SELECT date_trunc('hour', _end_hour + interval '59 minute')) --Round up _end_hour
 		AND s.date=_date
 	)
 
@@ -110,15 +107,16 @@ $$ LANGUAGE plpgsql;
 -- This routine is used to join a booked meeting room. The employee ID is the ID of the employee that is joining the booked meeting room. 
 -- If the employee is allowed to join, the routine will process the join. Since an approved meeting
 -- cannot have a change in participants, the employee is not allowed to join an approved meeting.
--- Usage SELECT * FROM join_meeting(4, 2, '2021-08-10','13:00:00', '14:00:00', 12);
+-- Usage: SELECT * FROM join_meeting(4, 2, '2022-04-15','17:00:00', '17:59:00', 124);
+--        SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15'
 -- Contraints satified: [17], [19], [23], [26]
 -- Qn: Should a close contact be allowed to join meetings/book rooms?
 CREATE OR REPLACE FUNCTION join_meeting
     (IN _floor INT, _room INT, _date DATE, _start_hour TIME, _end_hour TIME, _eid INT)
 RETURNS VOID AS $$
 DECLARE
-    start_time TIME:= _start_hour;
-	end_time TIME:= _end_hour;
+    start_time TIME:= (SELECT date_trunc('hour', _start_hour + interval '0 minute'));
+	end_time TIME:= (SELECT date_trunc('hour', _end_hour + interval '59 minute'));
 BEGIN
     WHILE start_time < end_time LOOP
 	    INSERT INTO Joins (eid, time, date, room, floor) VALUES (_eid, start_time, _date, _room, _floor);
@@ -201,14 +199,14 @@ EXECUTE FUNCTION can_join_meeting();
 
 -- This routine is used to leave a booked meeting room. If this employee is not the meeting in the first place, then do nothing. 
 -- Otherwise, process the leave. Since an approved meeting cannot have a change in participants, the employee is not allowed to leave an approved meeting.
--- Usage SELECT * FROM leave_meeting(4, 2, '2021-08-10','13:00:00', '14:00:00', 12);
+-- Usage: SELECT * FROM leave_meeting(4, 2, '2022-04-15','17:00:00', '18:00:00', 124);
 -- Contraints satified: [23]
 CREATE OR REPLACE FUNCTION leave_meeting
     (IN _floor INT, _room INT, _date DATE, _start_hour TIME, _end_hour TIME, _eid INT)
 RETURNS VOID AS $$
 DECLARE
-    start_time TIME:= _start_hour;
-	end_time TIME:= _end_hour;
+    start_time TIME:= (SELECT date_trunc('hour', _start_hour + interval '0 minute'));
+	end_time TIME:= (SELECT date_trunc('hour', _end_hour + interval '59 minute'));
 BEGIN  
 	WHILE start_time < end_time LOOP
 		DELETE FROM Joins 
