@@ -105,7 +105,7 @@ $$ LANGUAGE plpgsql;
 -- RETURNs: The routine RETURNs a table containing all employee ID that do not declare their temperature at least once FROM the start date 
 --          (inclusive) to the end date (inclusive). In other words, [start date, end date] along with 
 --           the number of days the employee did not declare their temperature within the given period. (ORDER BY DESC numDays )
--- Usage: SELECT * FROM non_compliance('2021-11-17', '2021-11-18')
+-- Usage: SELECT * FROM non_compliance('2021-11-17', '2021-11-22');
 DROP FUNCTION IF EXISTS non_compliance(startDate Date, endDate Date);
 CREATE OR REPLACE FUNCTION non_compliance(IN startDate Date, IN endDate Date) 
 RETURNS TABLE(eid INT, days BIGINT) AS $$
@@ -121,39 +121,38 @@ BEGIN
 		 GROUP BY h.eid
    )
 
-    SELECT * FROM (SELECT e.eid,
+    SELECT * FROM (SELECT DISTINCT(e.eid),
 		  CASE WHEN e.eid NOT IN (SELECT t.eid FROM num_declarations t)
 			   THEN num_days
 			   ELSE num_days - (SELECT t.num_declared FROM num_declarations t WHERE t.eid=e.eid)
 		  END AS num_undeclared
     FROM Employees e, num_declarations t
-    ORDER BY num_undeclared DESC) t2 WHERE t2.num_undeclared >0 ;
+    ORDER BY num_undeclared DESC) t2 WHERE t2.num_undeclared > 0 ;
 END;
 $$ language plpgsql;
-SELECT * FROM non_compliance('2021-11-20', '2021-11-22');
 
 -- Usage: SELECT * FROM change_capacity(1, 1, 12, current_date, 499)
 CREATE OR REPLACE FUNCTION change_capacity(IN floor_in int, IN room_in int, IN cap int, IN date_in Date, IN m_eid int)
 RETURNS VOID AS
     $$
     DECLARE
-        has_same_date_and_room INT = -1; --need to update if > 0
-        is_same_cap INT = -1; -- abort if > 0
+        has_same_date_and_room INT := -1; --need to update if > 0
+        is_same_cap INT := -1; -- abort if > 0
     BEGIN
         -- An entry for the same date and room exists, but capacity is different
         SELECT COUNT(*) INTO has_same_date_and_room FROM Updates u
             WHERE
-                floor_in = u.floor AND
-                room_in = u.room AND
-                date_in = u.date AND
-                cap != u.new_cap;
+                u.floor = floor_in AND
+                u.room = room_in AND
+                u.date = date_in AND
+                u.new_cap <> cap;
         -- An entry from the same date and room exists but capacity is same
         SELECT COUNT(*) INTO is_same_cap FROM Updates u
             WHERE
-                floor_in = u.floor AND
-                room_in = u.room AND
-                date_in = u.date AND
-                cap = u.new_cap;
+                u.floor = floor_in AND
+                u.room = room_in AND
+                u.date = date_in AND
+                u.new_cap = cap;
         IF(is_same_cap > 0 ) THEN
              RAISE NOTICE 'Meeting Room already has this cap for this date. Exiting function.';
             RETURN;
@@ -161,9 +160,9 @@ RETURNS VOID AS
                 RAISE NOTICE 'Updating meeting room prev cap for this date';
                 UPDATE Updates SET manager_eid = m_eid, new_cap = cap
                     WHERE
-                          (floor_in = floor AND
-                            room_in = room AND
-                            date_in = date );
+                          (floor = floor_in AND
+                            room = room_in AND
+                            date = date_in );
         ELSE
             INSERT INTO Updates(manager_eid, room, floor, date, new_cap) VALUES (m_eid, room_in, floor_in, date_in, cap);
     END IF;
@@ -174,16 +173,19 @@ $$ language plpgsql;
 -- 1. Manager FROM same dept only can update capacity [24]
 CREATE OR REPLACE FUNCTION do_updating_capacity() RETURNS TRIGGER AS $$
     DECLARE
-        correct_did INT = 0;
+        correct_did INT := 0;
     BEGIN
-        SELECT COUNT(*) INTO correct_did  from MeetingRooms m, Employees e WHERE
+        SELECT COUNT(*) INTO correct_did FROM MeetingRooms m, Employees e WHERE
                 m.floor = NEW.floor AND
                 m.room = NEW.room AND
-                m.did = e.did;
-        IF (correct_did > 0) THEN
+                m.did = e.did AND
+                e.eid = NEW.manager_eid AND
+                NEW.manager_eid IN (SELECT eid FROM manager);
+
+        IF (correct_did = 0) THEN
           RETURN NEW;
         ELSE
-            RAISE NOTICE 'Only managers from same department as meeting room can update capcity. Aborting.';
+            RAISE EXCEPTION 'Only managers from same department as meeting room can update capcity. Aborting.';
             RETURN NULL;
         end if;
     END
