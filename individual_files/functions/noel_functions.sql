@@ -86,7 +86,9 @@ $$ LANGUAGE plpgsql;
 -- This routine is to be used by employee to find all future meetings this employee is going to have that are already approved.
 -- Returns: The routine returns a table containing all meetings that are already approved for which this employee is joining from the given start date onwards. 
 --          Note that the employee need not be the one booking this meeting room.
--- Usage: SELECT * FROM view_future_meeting('2021-02-20', 475) 
+-- SELECT * FROM approve_meeting(2,1, '2023-05-16', '17:00:00', '17:01:00', 478);
+-- SELECT * FROM approve_meeting(2,3, '2023-01-07', '16:00:00', '17:00:00', 478);
+-- Usage: SELECT * FROM view_future_meeting('2021-02-20', 476)
 CREATE OR REPLACE FUNCTION view_future_meeting
     (IN _start_date DATE, IN _eid INT)
 
@@ -141,7 +143,7 @@ DECLARE
 	current_occupancy INT;
     max_capacity INT;
 BEGIN
-    -- Check if employee has fever
+    -- Check if employee has fever (If employee has not declared temperature, then it he has_fever wil default to true to prevent any joining of meetings)
 	SELECT COALESCE(fever, true) INTO has_fever FROM HealthDeclaration h WHERE h.eid = New.eid  AND h.date = CURRENT_DATE;
 	
 	-- Check if meeting is approved
