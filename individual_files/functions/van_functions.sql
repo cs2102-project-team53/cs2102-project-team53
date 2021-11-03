@@ -88,7 +88,7 @@ BEGIN
 	-- √ If the employee is the one booking the room, the booking is cancelled, approved or not.
 	DELETE FROM Sessions WHERE (booker_eid = eid_in AND date >= trace_date);
 	END IF;
-END
+END;
 $$ LANGUAGE plpgsql;
 
 -- TESTING QUERIES:
@@ -166,7 +166,7 @@ RETURNS VOID AS
         ELSE
             INSERT INTO Updates(manager_eid, room, floor, date, new_cap) VALUES (m_eid, room_in, floor_in, date_in, cap);
     END IF;
-END
+END;
 $$ language plpgsql;
 
 -- Updating Constraints:
@@ -194,7 +194,7 @@ CREATE OR REPLACE FUNCTION do_updating_capacity() RETURNS TRIGGER AS $$
         END IF;
         RETURN NEW;
         
-    END
+END;
 $$ language plpgsql;
 
 
