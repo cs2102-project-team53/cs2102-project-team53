@@ -173,21 +173,27 @@ $$ language plpgsql;
 -- 1. Manager FROM same dept only can update capacity [24]
 CREATE OR REPLACE FUNCTION do_updating_capacity() RETURNS TRIGGER AS $$
     DECLARE
-        correct_did INT := 0;
+        is_manager INT;
+        is_same_dept INT;
     BEGIN
-        SELECT COUNT(*) INTO correct_did FROM MeetingRooms m, Employees e WHERE
-                m.floor = NEW.floor AND
-                m.room = NEW.room AND
-                m.did = e.did AND
-                e.eid = NEW.manager_eid AND
-                NEW.manager_eid IN (SELECT eid FROM manager);
+        -- Check if Employee is a Manager
+        SELECT COUNT(*) INTO is_manager FROM Manager m WHERE m.eid = NEW.manager_eid;
+        
+        -- Check if Manager is in the same Department as the Session
+        SELECT COUNT(*) INTO is_same_dept FROM MeetingRooms mr, Employees e 
+        WHERE e.eid = NEW.manager_eid AND mr.did = e.did AND mr.floor = NEW.floor AND mr.room = NEW.room;
 
-        IF (correct_did = 0) THEN
-          RETURN NEW;
-        ELSE
+        IF (is_manager = 0) THEN
+            RAISE EXCEPTION 'Only Managers can update capacity';
+            RETURN NULL;
+        END IF;
+
+        IF(is_same_dept = 0) THEN
             RAISE EXCEPTION 'Only managers from same department as meeting room can update capcity. Aborting.';
             RETURN NULL;
-        end if;
+        END IF;
+        RETURN NEW;
+        
     END
 $$ language plpgsql;
 
