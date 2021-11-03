@@ -4326,3 +4326,6 @@ insert into Joins (eid, time, date, room, floor) values (184, '16:00:00', '2022-
 insert into Joins (eid, time, date, room, floor) values (467, '9:00:00', '2022-03-14', 3, 4);
 insert into Joins (eid, time, date, room, floor) values (423, '17:00:00', '2023-05-16', 1, 2);
 insert into Joins (eid, time, date, room, floor) values (476, '16:00:00', '2023-01-07', 3, 2);
+insert into Joins (eid, time, date, room, floor) values (476, '16:00:00', '2022-05-13', 2, 4);
+insert into Joins (eid, time, date, room, floor) values (476, '9:00:00', '2022-03-14', 3, 4);
+insert into Joins (eid, time, date, room, floor) values (476, '17:00:00', '2023-05-16', 1, 2);
