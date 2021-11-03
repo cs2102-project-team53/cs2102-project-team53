@@ -166,7 +166,7 @@ RETURNS TRIGGER AS $$
 DECLARE
     employees_count INT;
 BEGIN
-    SELECT COUNT(*) INTO employees_count FROM Employees e, Departments d WHERE e.did=d.did AND d.did=OLD.did;
+    SELECT COUNT(*) INTO employees_count FROM Employees e WHERE e.did=OLD.did;
 
     IF employees_count > 0 THEN
         RAISE EXCEPTION 'Deletion not allowed as the department still has employees';
@@ -177,6 +177,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS department_deletion_check ON Departments;
 CREATE TRIGGER department_deletion_check
 BEFORE DELETE ON Departments
 FOR EACH ROW
