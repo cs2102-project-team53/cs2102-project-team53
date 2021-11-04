@@ -30,7 +30,8 @@ RETURNS TRIGGER AS $$
 DECLARE
     employees_count INT;
 BEGIN
-    SELECT COUNT(*) INTO employees_count FROM Employees e WHERE e.did=OLD.did;
+    -- Check for any employees in the dept who have not resigned/been fired
+    SELECT COUNT(*) INTO employees_count FROM Employees e WHERE e.did=OLD.did AND e.resigned_date IS NULL;
 
     IF employees_count > 0 THEN
         RAISE EXCEPTION 'Deletion not allowed as the department still has employees';
