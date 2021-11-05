@@ -223,6 +223,21 @@ DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW
 EXECUTE FUNCTION check_employees_kind();
 
+-- Prohibit manual deletion of an employee.
+CREATE OR REPLACE FUNCTION handle_employees_deletion()
+RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'Manual deletion of employee(s) are prohibited.';
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS prohibit_employees_deletion ON Employees;
+CREATE TRIGGER prohibit_employees_deletion
+BEFORE DELETE ON Employees
+FOR EACH ROW
+EXECUTE FUNCTION handle_employees_deletion();
+
 -- This routine is used to add a new employee.
 -- Usage: SELECT * FROM add_employee('kevin', 88735936, 'SENIOR', 1);
 -- TESTING FUNCTIONS:
