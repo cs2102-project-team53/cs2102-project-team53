@@ -175,6 +175,53 @@ CREATE TRIGGER trigger_after_new_cap
 -- 1. Each employee must be one and only one of the three kinds of employees: junior, senior or manager. [12]
 -- 2. When an employee resign, all past records are kept. [33]
 
+-- This trigger disallows the insertion of an employee without inserting to junior, senior, or manager on the same transaction. 
+-- This is possible through defining the trigger to be `DEFERRABLE INITIALLY DEFERRED`
+-- This will not break he add_employee function as I assume it is counted as a single transaction.
+
+-- Correct usage (Inserting both to employee and to junior/senior/manager in a single transaction):
+-- BEGIN TRANSACTION;
+-- insert into employees values (1000, 1, 'Test', 'Test@gmail.com', 1237127123, 1238123128, 1823128382);
+-- insert into junior values (1000);
+-- COMMIT;
+
+-- Incorrect usage (Inserting only to employees in a single transaction):
+-- BEGIN TRANSACTION;
+-- insert into employees values (1001, 1, 'Test', 'Test2@gmail.com', 1237127123, 1238123128, 1823128382);
+-- COMMIT;
+
+-- Employees need to be one of junior, senior or manager.
+CREATE OR REPLACE FUNCTION check_employees_kind()
+RETURNS TRIGGER AS $$
+DECLARE
+    is_assigned INT := 0;
+BEGIN
+    SELECT COUNT(*) INTO is_assigned FROM Junior j WHERE NEW.eid=j.eid;
+
+    IF is_assigned = 0 THEN
+        SELECT COUNT(*) INTO is_assigned FROM Senior s WHERE NEW.eid=s.eid;
+    END IF;
+
+    IF is_assigned = 0 THEN
+        SELECT COUNT(*) INTO is_assigned FROM Manager m WHERE NEW.eid=m.eid;
+    END IF;
+
+    IF is_assigned = 0 THEN
+        DELETE FROM Employees e WHERE e.eid = NEW.eid;
+
+        RAISE EXCEPTION 'An employee needs to be one of the three kinds of employees: junior, senior or manager';
+    END IF;
+
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS employees_manual_insert_check ON Employees;
+CREATE CONSTRAINT TRIGGER employees_manual_insert_check
+AFTER INSERT OR UPDATE ON Employees
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW
+EXECUTE FUNCTION check_employees_kind();
 
 -- This routine is used to add a new employee.
 -- Usage: SELECT * FROM add_employee('kevin', 88735936, 'SENIOR', 1);
