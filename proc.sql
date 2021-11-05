@@ -218,7 +218,7 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS employees_manual_insert_check ON Employees;
 CREATE CONSTRAINT TRIGGER employees_manual_insert_check
-AFTER INSERT OR UPDATE ON Employees
+AFTER INSERT OR UPDATE ON Employees -- DEFERRABLE triggers can only be used for AFTER, not BEFORE
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW
 EXECUTE FUNCTION check_employees_kind();

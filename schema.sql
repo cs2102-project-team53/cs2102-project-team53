@@ -21,6 +21,7 @@ CREATE TABLE Employees (
 	home_number NUMERIC,
 	office_number NUMERIC,
     resigned_date DATE,
+    cc_end_date DATE,
     FOREIGN KEY (did) REFERENCES Departments(did)
     -- trigger
     -- DELETE  --> BEFORE --> RAISE EXCEPTION("not allowed to dept cause has employees")
@@ -59,7 +60,7 @@ CREATE TABLE HealthDeclaration (
 	temp NUMERIC NOT NULL,
     fever BOOLEAN GENERATED ALWAYS AS (temp > 37.5) STORED,
 	PRIMARY KEY (eid, date),
-	FOREIGN KEY (eid) REFERENCES Employees(eid),
+	FOREIGN KEY (eid) REFERENCES Employees(eid) ON DELETE CASCADE ON UPDATE CASCADE,
 	CONSTRAINT temp_range_check CHECK ((temp >= 34 AND temp<=43))
 );
 
