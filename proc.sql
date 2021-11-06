@@ -57,6 +57,36 @@ BEFORE DELETE ON Departments
 FOR EACH ROW
 EXECUTE FUNCTION check_department_empty();
 
+
+-- Remove employees from future meetings/bookings on resigning
+CREATE OR REPLACE FUNCTION remove_resigned_employees()
+RETURNS TRIGGER AS $$
+DECLARE
+    has_resigned INT;
+    is_booker INT;
+BEGIN
+    SELECT COUNT(*) INTO has_resigned FROM Employees e WHERE e.eid=NEW.eid AND e.resigned_date IS NOT NULL;
+    
+    IF (has_resigned=1) THEN
+        DELETE FROM Sessions s WHERE s.booker_eid=NEW.eid AND s.date > NEW.resigned_date;
+        DELETE FROM Joins j WHERE (j.eid = NEW.eid AND j.date >= NEW.resigned_date);
+        RETURN NULL;
+    END IF;
+    
+    RETURN NULL;
+   
+END;
+$$ LANGUAGE plpgsql;
+
+
+DROP TRIGGER IF EXISTS employee_resign_removal ON Employees;
+CREATE TRIGGER employee_resign_removal
+AFTER UPDATE ON Employees
+FOR EACH ROW
+EXECUTE FUNCTION remove_resigned_employees();
+
+
+
 -- This routine is used to add a new room
 -- As a new room requires the initial capacity to be set in updates table, a manager_eid is also required as input
 -- Usage: SELECT * FROM add_room (5, 4, 'Test', 2, 7);
@@ -998,8 +1028,3 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE plpgsql;
-
-
-
-
-
