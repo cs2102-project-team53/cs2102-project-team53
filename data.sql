@@ -2563,7 +2563,7 @@ insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values 
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('15:00:00', '2023-04-06', 2, 3, 427, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('12:00:00', '2022-10-19', 1, 3, 491, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('14:00:00', '2023-06-28', 2, 3, 391, null);
-insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('18:00:00', '2022-02-24', 2, 4, 500, 483);
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('18:00:00', '2022-02-24', 2, 4, 500, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('17:00:00', '2022-02-09', 2, 1, 469, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('17:00:00', '2022-11-01', 1, 3, 336, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('10:00:00', '2022-06-27', 3, 1, 459, null);
@@ -2578,7 +2578,7 @@ insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values 
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('17:00:00', '2022-01-12', 2, 4, 447, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('12:00:00', '2022-11-23', 2, 3, 350, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('14:00:00', '2022-01-31', 2, 4, 303, null);
-insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('10:00:00', '2023-03-16', 3, 4, 500, 473);
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('10:00:00', '2023-03-16', 3, 4, 500, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('10:00:00', '2022-09-03', 1, 1, 370, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('9:00:00', '2022-07-06', 2, 4, 491, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('15:00:00', '2023-03-19', 2, 2, 321, null);
@@ -2605,7 +2605,7 @@ insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values 
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2022-12-12', 1, 2, 398, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('10:00:00', '2022-09-23', 2, 4, 409, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('17:00:00', '2023-01-05', 3, 3, 472, null);
-insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('10:00:00', '2022-10-07', 1, 4, 500, 482);
+insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('10:00:00', '2022-10-07', 1, 4, 500, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('15:00:00', '2023-03-23', 1, 1, 476, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('13:00:00', '2023-03-02', 2, 3, 482, null);
 insert into Sessions (time, date, room, floor, booker_eid, approver_eid) values ('18:00:00', '2023-01-15', 3, 1, 396, null);
