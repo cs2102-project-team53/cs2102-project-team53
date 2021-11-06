@@ -634,6 +634,14 @@ END;
 $$ LANGUAGE plpgsql;
 
 
+-- This routine is used to join a booked meeting room. The employee ID is the ID of the employee that is joining the booked meeting room. 
+-- If the employee is allowed to join, the routine will process the join. Since an approved meeting
+-- cannot have a change in participants, the employee is not allowed to join an approved meeting.
+-- Usage: SELECT * FROM join_meeting(4, 2, '2022-04-15','17:00:00', '17:59:00', 124);
+--        SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15'
+-- Contraints satified: [17], [19], [23], [26]
+-- Qn: Should a close contact be allowed to join meetings/book rooms?
+-- Noel
 CREATE OR REPLACE FUNCTION can_join_meeting()
 -- Constraints for Joining
 -- 1. Can only join future meetings [26]
@@ -641,6 +649,7 @@ CREATE OR REPLACE FUNCTION can_join_meeting()
 -- 3. Cannot join approved meetings [23] 
 -- 4. Employee should not have resigned [34]
 -- 5. Meeting Room Capacity cannot be exceeded 
+-- 6. Employee should not be a close contact at time of joining
 RETURNS TRIGGER AS $$
 DECLARE
     has_fever BOOLEAN;
@@ -648,6 +657,7 @@ DECLARE
     has_retired BOOLEAN;
     current_occupancy INT;
     max_capacity INT;
+    is_close_contact INT;
 BEGIN
     -- Check if employee has fever (If employee has not declared temperature, then it he has_fever wil default to true to prevent any joining of meetings)
     SELECT COALESCE(fever, true) INTO has_fever FROM HealthDeclaration h WHERE h.eid = New.eid  AND h.date = CURRENT_DATE;
@@ -675,6 +685,9 @@ BEGIN
     GROUP BY room, floor
     HAVING room=NEW.room and floor=NEW.floor
     );
+
+    -- Check if employee cc_end_date falls between today and 7days before today to see employee is currently a close contact
+    SELECT COUNT(*) INTO is_close_contact FROM Employees e WHERE e.eid=NEW.eid AND e.cc_end_date <= CURRENT_DATE AND e.cc_end_date>= CURRENT_DATE - INTERVAL '7 DAYS';
                                    
   
     IF has_fever THEN
@@ -692,6 +705,9 @@ BEGIN
     END IF;
     IF current_occupancy >= max_capacity THEN
         RAISE EXCEPTION 'Sorry the room is fully booked';
+    END IF;
+    IF is_close_contact = 1 THEN
+        RAISE EXCEPTION 'Employee is currently an active close contact and cannot join meetings';
     END IF;
     RETURN NEW;
 END;
@@ -715,6 +731,7 @@ RETURNS VOID AS $$
 DECLARE
     start_time TIME:= (SELECT date_trunc('hour', _start_hour + interval '0 minute'));
     end_time TIME:= (SELECT date_trunc('hour', _end_hour + interval '59 minute'));
+    is_booker INT
 BEGIN  
     WHILE start_time < end_time LOOP
         DELETE FROM Joins 
@@ -725,6 +742,20 @@ BEGIN
         AND floor=_floor;
         start_time:= start_time + '01:00:00';
     END LOOP;
+
+    SELECT COUNT(*) INTO is_booker FROM Sessions s 
+    WHERE s.booker_eid=_eid 
+    AND s.time=start_time
+    AND s.date=_date
+    AND s.room=_room
+    AND s.floor=_floor;
+
+    IF (is_booker=1) THEN
+        DELETE FROM Sessions s WHERE s.time=start_time
+        AND s.date=_date
+        AND s.room=_room
+        AND s.floor=_floor;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
