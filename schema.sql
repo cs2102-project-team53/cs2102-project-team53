@@ -67,7 +67,8 @@ CREATE TABLE Sessions (
 	floor INTEGER,
 	booker_eid INT NOT NULL,
 	approver_eid INTEGER,
-    PRIMARY KEY(time, date, room, floor),
+	UNIQUE (booker_eid, time, date),
+    PRIMARY KEY(time, date, room, floor),    
     FOREIGN KEY (room, floor) REFERENCES MeetingRooms(room, floor) ON DELETE CASCADE ON UPDATE CASCADE,
 	FOREIGN KEY (booker_eid) REFERENCES Booker(eid) ON DELETE CASCADE ON UPDATE CASCADE,
 	FOREIGN KEY (approver_eid) REFERENCES Manager(eid)
@@ -90,6 +91,7 @@ CREATE TABLE Joins (
     date DATE,
     room INTEGER,
     floor INTEGER,
+    UNIQUE (eid, time, date),
     PRIMARY KEY (eid, time, date, room, floor),
     FOREIGN KEY (eid) REFERENCES Employees(eid),
     FOREIGN KEY (time, date, room, floor) REFERENCES Sessions (time, date, room, floor) ON DELETE CASCADE ON UPDATE CASCADE
