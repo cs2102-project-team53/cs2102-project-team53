@@ -489,9 +489,10 @@ DECLARE
     is_booker INT;
     is_future_date BOOLEAN;
     has_resigned BOOLEAN;
+	is_close_contact INT;
 BEGIN
-    -- Check if Booker has a fever
-    SELECT hd.fever INTO has_fever FROM HealthDeclaration hd WHERE hd.eid = NEW.booker_eid AND hd.date = CURRENT_DATE;
+	-- Check if Booker has fever (If employee has not declared temperature, then has_fever wil default to false)
+    SELECT COALESCE(fever, false) INTO has_fever FROM HealthDeclaration hd WHERE hd.eid = NEW.booker_eid  AND hd.date = CURRENT_DATE;
     
     -- Check if Employee is a Booker
     SELECT COUNT(*) INTO is_booker FROM Booker b WHERE b.eid = NEW.booker_eid;
@@ -501,6 +502,9 @@ BEGIN
     
     -- Check if Booker has resigned
     has_resigned := (SELECT e.resigned_date FROM Employees e WHERE e.eid = NEW.booker_eid)  IS NOT NULL;
+	
+	-- Check if Booker's cc_end_date falls between today and 7days before today to see if employee is currently a close contact
+    SELECT COUNT(*) INTO is_close_contact FROM Employees e WHERE e.eid = NEW.booker_eid AND e.cc_end_date <= CURRENT_DATE AND e.cc_end_date>= CURRENT_DATE - INTERVAL '7 DAYS';
     
     IF has_fever THEN
         RAISE EXCEPTION 'Bookers with a fever cannot book a room';
@@ -517,6 +521,10 @@ BEGIN
     IF has_resigned THEN
         RAISE EXCEPTION 'Resigned employees cannot book a room';
     END IF;
+	
+	IF is_close_contact = 1 THEN
+		RAISE EXCEPTION 'Booker is currently an active close contact and are not allowed to book meetings';
+	END IF;
 
     RETURN NEW; -- ** Need to RETURN NEW for the insert to go through
 END;
@@ -590,25 +598,6 @@ DROP TRIGGER IF EXISTS check_unbooking_constraints ON Sessions;
 CREATE TRIGGER check_unbooking_constraints
 BEFORE DELETE ON Sessions
 FOR EACH ROW EXECUTE FUNCTION can_unbook_room();
-
-
--- Trigger to remove participants from Joins after deleting a Booking from Sessions
-CREATE OR REPLACE FUNCTION remove_participants_after_unbooking()
-RETURNS TRIGGER AS $$
-BEGIN
-    DELETE FROM Joins j WHERE (
-        j.time = OLD.time AND
-        j.date = OLD.date AND
-        j.room = OLD.room AND
-        j.floor = OLD.floor);
-    RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS trigger_after_sessions_delete ON Sessions;
-CREATE TRIGGER trigger_after_sessions_delete
-AFTER DELETE ON Sessions
-FOR EACH ROW EXECUTE FUNCTION remove_participants_after_unbooking();
 
 
 -- This routine is used to join a booked meeting room. The employee ID is the ID of the employee that is joining the booked meeting room. 
@@ -686,7 +675,7 @@ BEGIN
     HAVING room=NEW.room and floor=NEW.floor
     );
 
-    -- Check if employee cc_end_date falls between today and 7days before today to see employee is currently a close contact
+    -- Check if employee cc_end_date falls between today and 7days before today to see if employee is currently a close contact
     SELECT COUNT(*) INTO is_close_contact FROM Employees e WHERE e.eid=NEW.eid AND e.cc_end_date <= CURRENT_DATE AND e.cc_end_date>= CURRENT_DATE - INTERVAL '7 DAYS';
                                    
   
@@ -962,13 +951,6 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trigger_after_update_cc ON Employees;
-CREATE TRIGGER trigger_after_update_cc
-AFTER UPDATE ON Employees
-FOR EACH ROW WHEN (NEW.cc_end_date is not NULL) EXECUTE FUNCTION after_update_cc();
-
-
-
 CREATE OR REPLACE FUNCTION after_update_cc()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -984,14 +966,12 @@ BEGIN
 END;
 $$ language plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_after_update_cc ON Employees;
+CREATE TRIGGER trigger_after_update_cc
+AFTER UPDATE ON Employees
+FOR EACH ROW WHEN (NEW.cc_end_date is not NULL) EXECUTE FUNCTION after_update_cc();
+
 --  TRIGGER TO RUN contact_tracing AFTER insert/update into healthDeclaration
-DROP TRIGGER IF EXISTS trigger_health_dec ON HealthDeclaration;
-CREATE TRIGGER trigger_health_dec
-AFTER INSERT OR UPDATE ON HealthDeclaration
-FOR EACH ROW WHEN (NEW.fever) EXECUTE FUNCTION after_health_dec();
-
-
-
 CREATE OR REPLACE FUNCTION after_health_dec() RETURNS TRIGGER AS $$
     BEGIN
         PERFORM contact_tracing(NEW.eid, NEW.date);
@@ -999,6 +979,11 @@ CREATE OR REPLACE FUNCTION after_health_dec() RETURNS TRIGGER AS $$
     END
 $$
 language plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_health_dec ON HealthDeclaration;
+CREATE TRIGGER trigger_health_dec
+AFTER INSERT OR UPDATE ON HealthDeclaration
+FOR EACH ROW WHEN (NEW.fever) EXECUTE FUNCTION after_health_dec();
 
 
 -- #########  ADMIN  #########-- 
