@@ -659,8 +659,8 @@ DECLARE
     max_capacity INT;
     is_close_contact INT;
 BEGIN
-    -- Check if employee has fever (If employee has not declared temperature, then it he has_fever wil default to true to prevent any joining of meetings)
-    SELECT COALESCE(fever, true) INTO has_fever FROM HealthDeclaration h WHERE h.eid = New.eid  AND h.date = CURRENT_DATE;
+    -- Check if employee has fever (If employee has not declared temperature, then has_fever wil default to false)
+    SELECT COALESCE(fever, false) INTO has_fever FROM HealthDeclaration h WHERE h.eid = New.eid  AND h.date = CURRENT_DATE;
     
     -- Check if meeting is approved
     SELECT COALESCE(approver_eid, 0) INTO is_meeting_approved FROM Sessions s 
@@ -731,8 +731,8 @@ RETURNS VOID AS $$
 DECLARE
     start_time TIME:= (SELECT date_trunc('hour', _start_hour + interval '0 minute'));
     end_time TIME:= (SELECT date_trunc('hour', _end_hour + interval '59 minute'));
-    is_booker INT
-BEGIN  
+    is_booker INT;
+BEGIN 
     WHILE start_time < end_time LOOP
         DELETE FROM Joins 
         WHERE eid=_eid
@@ -745,17 +745,20 @@ BEGIN
 
     SELECT COUNT(*) INTO is_booker FROM Sessions s 
     WHERE s.booker_eid=_eid 
-    AND s.time=start_time
+    AND s.time=(SELECT date_trunc('hour', _start_hour + interval '0 minute'))
     AND s.date=_date
     AND s.room=_room
     AND s.floor=_floor;
 
-    IF (is_booker=1) THEN
-        DELETE FROM Sessions s WHERE s.time=start_time
+    IF is_booker = 1 THEN
+        DELETE FROM Sessions s WHERE 
+        s.time=(SELECT date_trunc('hour', _start_hour + interval '0 minute'))
         AND s.date=_date
         AND s.room=_room
         AND s.floor=_floor;
     END IF;
+
+    
 END;
 $$ LANGUAGE plpgsql;
 
