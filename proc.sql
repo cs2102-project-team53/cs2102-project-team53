@@ -106,88 +106,83 @@ $$ LANGUAGE plpgsql;
 
 -- Usage: SELECT * FROM change_capacity(1, 1, 12, current_date, 499)
 -- Van
+DROP FUNCTION IF EXISTS change_capacity(floor_in int, room_in int, cap int, date_in Date, m_eid int);
 CREATE OR REPLACE FUNCTION change_capacity(IN floor_in int, IN room_in int, IN cap int, IN date_in Date, IN m_eid int)
-RETURNS VOID AS
-    $$
-    DECLARE
-        has_same_date_and_room INT := -1; --need to update if > 0
-        is_same_cap INT := -1; -- abort if > 0
-    BEGIN
-        -- An entry for the same date and room exists, but capacity is different
-        SELECT COUNT(*) INTO has_same_date_and_room FROM Updates u
-            WHERE
-                u.floor = floor_in AND
-                u.room = room_in AND
-                u.date = date_in AND
-                u.new_cap <> cap;
-        -- An entry from the same date and room exists but capacity is same
-        SELECT COUNT(*) INTO is_same_cap FROM Updates u
-            WHERE
-                u.floor = floor_in AND
-                u.room = room_in AND
-                u.date = date_in AND
-                u.new_cap = cap;
-        IF(is_same_cap > 0 ) THEN
-             RAISE NOTICE 'Meeting Room already has this cap for this date. Exiting function.';
-            RETURN;
-        ELSEIF (has_same_date_and_room > 0 ) THEN
-                RAISE NOTICE 'Updating meeting room prev cap for this date';
-                UPDATE Updates SET manager_eid = m_eid, new_cap = cap
-                    WHERE
-                          (floor = floor_in AND
-                            room = room_in AND
-                            date = date_in );
-        ELSE
-            INSERT INTO Updates(manager_eid, room, floor, date, new_cap) VALUES (m_eid, room_in, floor_in, date_in, cap);
-    END IF;
+RETURNS VOID AS $$
+BEGIN
+      INSERT INTO Updates(room, floor, date, new_cap, manager_eid) VALUES (room_in, floor_in, date_in, cap, m_eid );
 END;
 $$ language plpgsql;
 
 -- Updating Constraints:
--- 1. Manager FROM same dept only can update capacity [24]
-CREATE OR REPLACE FUNCTION do_updating_capacity() RETURNS TRIGGER AS $$
+-- 1. Only Managers from the same dept only can update capacity [24]
+-- 2. If new_cap for that date already exists, Update instead of Insert
+DROP FUNCTION IF EXISTS check_updating_capacity();
+CREATE OR REPLACE FUNCTION check_updating_capacity() RETURNS TRIGGER AS $$
     DECLARE
         is_manager INT;
         is_same_dept INT;
+        date_entry_exists INT;
+
     BEGIN
         -- Check if Employee is a Manager
         SELECT COUNT(*) INTO is_manager FROM Manager m WHERE m.eid = NEW.manager_eid;
-        
+
         -- Check if Manager is in the same Department as the Session
-        SELECT COUNT(*) INTO is_same_dept FROM MeetingRooms mr, Employees e 
+        SELECT COUNT(*) INTO is_same_dept FROM MeetingRooms mr, Employees e
         WHERE e.eid = NEW.manager_eid AND mr.did = e.did AND mr.floor = NEW.floor AND mr.room = NEW.room;
 
         IF (is_manager = 0) THEN
             RAISE EXCEPTION 'Only Managers can update capacity';
-            RETURN NULL;
         END IF;
 
         IF(is_same_dept = 0) THEN
-            RAISE EXCEPTION 'Only managers from same department as meeting room can update capcity. Aborting.';
-            RETURN NULL;
+            RAISE EXCEPTION 'Only managers from same department as meeting room can update capacity. Aborting.';
         END IF;
-        RETURN NEW;
-        
+
+        --Passes manager checks --> do insert/update
+        -- For INSERT type:
+            --If date, room, floor exists in Updates --> change to UPDATE
+            --If date, room, floor not exists --> INSERT
+        -- For UPDATE type:
+            -- Just update
+        IF (TG_OP = 'UPDATE') THEN
+            RETURN NEW;
+
+        ELSEIF (TG_OP = 'INSERT') THEN
+            SELECT COUNT(*) INTO date_entry_exists FROM Updates u WHERE
+                u.room = NEW.room AND
+                u.floor = NEW.floor AND
+                u.date = NEW.date  ;
+
+            -- date entry alr exists --> call update instead
+            IF (date_entry_exists > 0) THEN
+                RAISE NOTICE 'Date entry alr exists';
+                UPDATE Updates SET manager_eid = NEW.manager_eid, new_cap = NEW.new_cap WHERE
+                    date = NEW.date AND
+                    room = NEW.room AND
+                    floor = NEW.floor;
+                RETURN NULL;
+            -- date entry does not exist --> INSERT
+            ELSE
+                RETURN NEW;
+            END IF;
+        END IF;
 END;
 $$ language plpgsql;
-
 
 DROP TRIGGER IF EXISTS trigger_before_new_cap ON Updates;
 CREATE TRIGGER trigger_before_new_cap
 BEFORE INSERT OR UPDATE ON updates
 FOR EACH ROW
-EXECUTE FUNCTION do_updating_capacity();
+EXECUTE FUNCTION check_updating_capacity();
 
--- TESTING QUERIES:
--- INSERT INTO Updates(room, floor, date, new_cap, manager_eid) VALUES (2,3 ,'2021-06-01',0, 499 ); -- manager from different dept
--- INSERT INTO Updates(room, floor, date, new_cap, manager_eid) VALUES (2,3 ,'2021-05-02',2, 494 ); -- manager from same dept
--- SELECT * FROM change_capacity(2,3 ,4,'2021-05-02', 494);
-
--- Does: delete sessions which exceed the new capacity after it is updated.
-CREATE OR REPLACE FUNCTION post_updated_cap() RETURNS TRIGGER
+-- Does: Delete sessions which exceed the new capacity after Updates is updated.
+DROP FUNCTION IF EXISTS after_updating_cap();
+CREATE OR REPLACE FUNCTION after_updating_cap() RETURNS TRIGGER
 AS $$
 BEGIN
-    --is there a trigger to delete FROM Joins if deleted in sessions? (Khiaxeng)
+
     RAISE NOTICE '## post_updated_cap: Deleting from appropriate sessions after updating capacity';
     DELETE FROM Sessions s WHERE (
         s.floor = NEW.floor AND
@@ -203,11 +198,12 @@ BEGIN
 END;
 $$ language plpgsql;
 
-
 DROP TRIGGER IF EXISTS trigger_after_new_cap ON Updates;
 CREATE TRIGGER trigger_after_new_cap
-    AFTER INSERT OR UPDATE ON Updates
-    FOR EACH ROW EXECUTE FUNCTION post_updated_cap();
+AFTER INSERT OR UPDATE ON Updates
+FOR EACH ROW EXECUTE FUNCTION after_updating_cap();
+
+
 
 
 -- Employee constraints:
@@ -871,60 +867,95 @@ BEGIN
     ELSE
         RAISE NOTICE 'Employee has fever, checking for close contacts';
     -- Find all approved meetings FROM the past 3 days which employee was part of
-    WITH MeetingRoomsAffected as (
+	WITH MeetingRoomsAffected as (
         SELECT m.room, m.floor FROM MeetingRooms m NATURAL JOIN Joins j NATURAL JOIN Sessions s
         WHERE j.eid = eid_in
         AND j.date < trace_date AND j.date >= trace_date - INTERVAL '3 DAYS'
         AND s.approver_eid IS NOT NULL
-    ),
-    
-    -- Find close contacts: employees in the same approved meeting room FROM the past 3 (i.e., FROM day D-3 to day D) days
-    -- ** Should this have j.date < trace_date or j.date <= trace_date?? Change in the below part accordingly also!
+	),
+
+	-- Find close contacts: employees in the same approved meeting room FROM the past 3 (i.e., FROM day D-3 to day D) days
     CloseContacts as (
-        SELECT DISTINCT j.eid FROM Joins j, MeetingRoomsAffected m
-        WHERE j.date < trace_date AND j.date >= trace_date - INTERVAL '3 DAYS'
-        AND j.room = m.room
-        AND j.floor = m.floor /*same room*/
-    )
-    -- Deleting close contacts from future meetings
-    DELETE FROM Joins j WHERE j.eid IN (SELECT * FROM CloseContacts) 
-    AND j.date >= trace_date AND j.date <= trace_date + INTERVAL '7 DAYS';
-                              
+		SELECT DISTINCT j.eid FROM Joins j, MeetingRoomsAffected m
+		WHERE j.date < trace_date AND j.date >= trace_date - INTERVAL '3 DAYS'
+		AND j.room = m.room
+		AND j.floor = m.floor /*same room*/
+	)
+--    	DELETE FROM Joins j WHERE j.eid IN (SELECT * FROM CloseContacts)
+-- 	AND j.date >= trace_date + INTERVAL '1000 DAYS' AND j.date <= trace_date + INTERVAL '7 DAYS';
+
+    UPDATE Employees SET cc_end_date = trace_date + INTERVAL '7 DAYS' WHERE
+        eid IN (SELECT * FROM CloseContacts) AND cc_end_date < trace_date + INTERVAL '7 DAYS';
+
+    -- Deleting close contacts from future meetings --> Done in trigger function below
+
     RETURN QUERY
-    -- Find all approved meetings FROM the past 3 days which employee was part of
-    -- ** change j.data < / = here also
-    WITH MeetingRoomsAffected as (
+	-- Find all approved meetings FROM the past 3 days which employee was part of
+	WITH MeetingRoomsAffected as (
         SELECT m.room, m.floor, s.time FROM MeetingRooms m NATURAL JOIN Joins j NATURAL JOIN Sessions s
         WHERE j.eid = eid_in
         AND j.date < trace_date AND j.date >= trace_date - INTERVAL '3 DAYS'
         AND s.approver_eid IS NOT NULL
-    ),
-    
-    -- Find close contacts: employees in the same approved meeting room FROM the past 3 (i.e., FROM day D-3 to day D) days
-    -- ** change j.data < / = here also
+	),
+
+	-- Find close contacts: employees in the same approved meeting room FROM the past 3 (i.e., FROM day D-3 to day D) days
     CloseContacts as (
-        SELECT DISTINCT j.eid FROM Joins j, MeetingRoomsAffected m
-        WHERE j.date < trace_date AND j.date >= trace_date - INTERVAL '3 DAYS'
-        AND j.room = m.room
-        AND j.floor = m.floor /*same room*/
+		SELECT DISTINCT j.eid FROM Joins j, MeetingRoomsAffected m
+		WHERE j.date < trace_date AND j.date >= trace_date - INTERVAL '3 DAYS'
+		AND j.room = m.room
+		AND j.floor = m.floor /*same room*/
         AND j.time = m.time /*same time; same session*/
-    )
-    SELECT * FROM CloseContacts;
-    
-    -- √ The employee is removed FROM all future meeting room booking, approved or not. √
-    DELETE FROM Joins WHERE (eid = eid_in AND date >= trace_date);
-    
-    -- √ If the employee is the one booking the room, the booking is cancelled, approved or not.
-    DELETE FROM Sessions WHERE (booker_eid = eid_in AND date >= trace_date);
-    END IF;
-END;
+	)
+	SELECT * FROM CloseContacts;
+
+	-- √ The employee is removed FROM all future meeting room booking, approved or not. √
+     DELETE FROM Joins WHERE (eid = eid_in AND date >= trace_date);
+--
+-- 	-- √ If the employee is the one booking the room, the booking is cancelled, approved or not.
+ 	DELETE FROM Sessions WHERE (booker_eid = eid_in AND date >= trace_date);
+
+	END IF;
+END
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_after_update_cc ON Employees;
+CREATE TRIGGER trigger_after_update_cc
+AFTER UPDATE ON Employees
+FOR EACH ROW WHEN (NEW.cc_end_date is not NULL) EXECUTE FUNCTION after_update_cc();
+
+
+DROP FUNCTION IF EXISTS after_update_cc;
+CREATE OR REPLACE FUNCTION after_update_cc()
+RETURNS TRIGGER AS $$
+BEGIN
+    DELETE From Joins j WHERE
+        j.eid = NEW.eid AND
+        j.date <= NEW.cc_end_date;
+    DELETE From Sessions s WHERE
+        s.booker_eid = NEW.eid AND
+        s.date <= NEW.cc_end_date;
+    RETURN NULL;
+END;
+$$ language plpgsql;
+
+--  TRIGGER TO RUN contact_tracing AFTER insert/update into healthDeclaration
+DROP TRIGGER IF EXISTS trigger_health_dec ON HealthDeclaration;
+CREATE TRIGGER trigger_health_dec
+AFTER INSERT OR UPDATE ON HealthDeclaration
+FOR EACH ROW WHEN (NEW.fever) EXECUTE FUNCTION after_health_dec();
+
+
+DROP FUNCTION IF EXISTS after_health_dec();
+CREATE OR REPLACE FUNCTION after_health_dec() RETURNS TRIGGER AS $$
+    BEGIN
+        PERFORM contact_tracing(NEW.eid, NEW.date);
+        RETURN NULL;
+    END
+$$
+language plpgsql;
 
 
 -- #########  ADMIN  #########-- 
-
-
 
 -- This routine is used to find all employees that do not comply with the daily health declaration (i.e., to snitch).
 -- RETURNs: The routine RETURNs a table containing all employee ID that do not declare their temperature at least once FROM the start date 
