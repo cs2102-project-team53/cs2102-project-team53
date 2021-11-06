@@ -261,9 +261,21 @@ EXECUTE FUNCTION check_employees_kind();
 -- Prohibit manual deletion of an employee.
 CREATE OR REPLACE FUNCTION handle_employees_deletion()
 RETURNS TRIGGER AS $$
+DECLARE
+    is_assigned INT := 0;
 BEGIN
-    RAISE EXCEPTION 'Manual deletion of employee(s) are prohibited.';
-    RETURN NULL;
+    SELECT COUNT(*) INTO is_assigned FROM Junior j WHERE OLD.eid=j.eid;
+
+    IF is_assigned = 0 THEN
+        SELECT COUNT(*) INTO is_assigned FROM Booker b WHERE OLD.eid=b.eid;
+    END IF;
+
+    IF is_assigned <> 0 THEN
+        RAISE EXCEPTION 'Manual deletion of employee(s) are prohibited.';
+        RETURN NULL;
+    END IF;
+    
+    RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
 
