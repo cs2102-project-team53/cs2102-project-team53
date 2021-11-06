@@ -117,7 +117,7 @@ $$ language plpgsql;
 -- Updating Constraints:
 -- 1. Only Managers from the same dept only can update capacity [24]
 -- 2. If new_cap for that date already exists, Update instead of Insert
-DROP FUNCTION IF EXISTS check_updating_capacity();
+
 CREATE OR REPLACE FUNCTION check_updating_capacity() RETURNS TRIGGER AS $$
     DECLARE
         is_manager INT;
@@ -178,7 +178,7 @@ FOR EACH ROW
 EXECUTE FUNCTION check_updating_capacity();
 
 -- Does: Delete sessions which exceed the new capacity after Updates is updated.
-DROP FUNCTION IF EXISTS after_updating_cap();
+
 CREATE OR REPLACE FUNCTION after_updating_cap() RETURNS TRIGGER
 AS $$
 BEGIN
@@ -920,12 +920,10 @@ BEGIN
 	)
 	SELECT * FROM CloseContacts;
 
+    -- √ If the employee is the one booking the room, the booking is cancelled, approved or not.
+ 	DELETE FROM Sessions WHERE (booker_eid = eid_in AND date >= trace_date AND date >= CURRENT_DATE );
 	-- √ The employee is removed FROM all future meeting room booking, approved or not. √
-     DELETE FROM Joins WHERE (eid = eid_in AND date >= trace_date);
---
--- 	-- √ If the employee is the one booking the room, the booking is cancelled, approved or not.
- 	DELETE FROM Sessions WHERE (booker_eid = eid_in AND date >= trace_date);
-
+     DELETE FROM Joins WHERE (eid = eid_in AND date >= trace_date AND date >= CURRENT_DATE);
 	END IF;
 END
 $$ LANGUAGE plpgsql;
@@ -936,16 +934,18 @@ AFTER UPDATE ON Employees
 FOR EACH ROW WHEN (NEW.cc_end_date is not NULL) EXECUTE FUNCTION after_update_cc();
 
 
-DROP FUNCTION IF EXISTS after_update_cc;
+
 CREATE OR REPLACE FUNCTION after_update_cc()
 RETURNS TRIGGER AS $$
 BEGIN
     DELETE From Joins j WHERE
         j.eid = NEW.eid AND
-        j.date <= NEW.cc_end_date;
+        j.date <= NEW.cc_end_date AND
+        j.date >= CURRENT_DATE;
     DELETE From Sessions s WHERE
         s.booker_eid = NEW.eid AND
-        s.date <= NEW.cc_end_date;
+        s.date <= NEW.cc_end_date AND
+        s.date >= CURRENT_DATE;
     RETURN NULL;
 END;
 $$ language plpgsql;
@@ -957,7 +957,7 @@ AFTER INSERT OR UPDATE ON HealthDeclaration
 FOR EACH ROW WHEN (NEW.fever) EXECUTE FUNCTION after_health_dec();
 
 
-DROP FUNCTION IF EXISTS after_health_dec();
+
 CREATE OR REPLACE FUNCTION after_health_dec() RETURNS TRIGGER AS $$
     BEGIN
         PERFORM contact_tracing(NEW.eid, NEW.date);
