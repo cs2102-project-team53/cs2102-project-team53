@@ -491,7 +491,7 @@ DECLARE
     has_resigned BOOLEAN;
 	is_close_contact INT;
 BEGIN
-	-- Check if Booker has fever (If employee has not declared temperature, then has_fever wil default to false)
+	-- Check if Booker has fever (If employee has not declared temperature, then has_fever will default to false)
     SELECT COALESCE(fever, false) INTO has_fever FROM HealthDeclaration hd WHERE hd.eid = NEW.booker_eid  AND hd.date = CURRENT_DATE;
     
     -- Check if Employee is a Booker
@@ -648,7 +648,7 @@ DECLARE
     max_capacity INT;
     is_close_contact INT;
 BEGIN
-    -- Check if employee has fever (If employee has not declared temperature, then has_fever wil default to false)
+    -- Check if employee has fever (If employee has not declared temperature, then has_fever will default to false)
     SELECT COALESCE(fever, false) INTO has_fever FROM HealthDeclaration h WHERE h.eid = New.eid  AND h.date = CURRENT_DATE;
     
     -- Check if meeting is approved
