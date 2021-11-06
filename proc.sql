@@ -29,12 +29,21 @@ CREATE OR REPLACE FUNCTION check_department_empty()
 RETURNS TRIGGER AS $$
 DECLARE
     employees_count INT;
+    room_count INT;
 BEGIN
     -- Check for any employees in the dept who have not resigned/been fired
     SELECT COUNT(*) INTO employees_count FROM Employees e WHERE e.did=OLD.did AND e.resigned_date IS NULL;
-
+    
+    -- Check if any meeting rooms that exist in the department
+    SELECT COUNT(*) INTO room_count FROM MeetingRooms mr WHERE mr.did=OLD.did;
+    
     IF employees_count > 0 THEN
         RAISE EXCEPTION 'Deletion not allowed as the department still has employees';
+        RETURN NULL;
+    END IF;
+
+    IF room_count > 0 THEN
+        RAISE EXCEPTION 'Deletion not allowed as the department still has associated meeting rooms';
         RETURN NULL;
     END IF;
 
@@ -248,7 +257,7 @@ EXECUTE FUNCTION handle_employees_deletion();
 -- SELECT * FROM add_employee('Charlie', 90915145, 'JUNIR', 3); -- mispelt kind.
 -- Kevin
 CREATE OR REPLACE FUNCTION add_employee
-    (IN ename VARCHAR(50), IN mobile_number INT, IN kind VARCHAR(50), IN did INTEGER)
+    (IN ename VARCHAR(50), IN mobile_number NUMERIC, IN kind VARCHAR(50), IN did INTEGER)
 RETURNS VOID AS $$
 DECLARE
     max_eid INT;
