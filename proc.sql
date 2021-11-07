@@ -774,7 +774,7 @@ BEGIN
     END IF;
     
     -- Check if employee has fever on the current date
-    SELECT has_fever FROM HealthDeclaration h WHERE h.eid=OLD.eid AND h.date= CURRENT_DATE;
+    SELECT fever INTO has_fever FROM HealthDeclaration h WHERE h.eid=OLD.eid AND h.date= CURRENT_DATE;
     IF has_fever = TRUE THEN
         RETURN OLD;
     END IF;
