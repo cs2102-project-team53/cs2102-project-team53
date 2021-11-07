@@ -763,7 +763,7 @@ RETURNS TRIGGER AS $$
 DECLARE
     is_meeting_approved INT;
     is_future_date BOOLEAN;
-    has_fever BOOLEAN;
+    has_fever INT;
     is_close_contact INT;
 BEGIN
     -- Check if Booking is a future date
@@ -773,15 +773,20 @@ BEGIN
         RAISE EXCEPTION 'Can only leave future meetings';
     END IF;
     
-    -- Check if employee has fever on the current date
-    SELECT fever INTO has_fever FROM HealthDeclaration h WHERE h.eid=OLD.eid AND h.date= CURRENT_DATE;
-    IF has_fever = TRUE THEN
+    -- Check if employee has fever on the max date (cant use current date cause our data  is in future)
+    SELECT COUNT(h.fever) INTO has_fever FROM HealthDeclaration h WHERE
+        h.eid = OLD.eid AND
+        NOT EXISTS (SELECT 1 FROM HealthDeclaration h2 WHERE h2.eid = h.eid AND h.date < h2.date);  -- declared fever previously
+--                                                            AND h.date = CURRENT_DATE; removing
+    IF has_fever > 0  THEN
         RETURN OLD;
     END IF;
 
     -- Check if current_date falls betwwen cc_end_date cc_end_date-7 to see if employee is an active close contact
-    SELECT COUNT(*) INTO is_close_contact FROM Employees e WHERE e.eid=OLD.eid AND e.cc_end_date >= CURRENT_DATE AND (e.cc_end_date - INTERVAL '7 DAYS')<=CURRENT_DATE;
-    IF is_close_contact = 1 THEN
+    SELECT COUNT(*) INTO is_close_contact FROM Employees e WHERE
+        e.eid = OLD.eid AND
+        e.cc_end_date >= OLD.date;
+    IF is_close_contact > 0 THEN
         RETURN OLD;
     END IF;
 
@@ -946,7 +951,7 @@ BEGIN
 -- 	AND j.date >= trace_date + INTERVAL '1000 DAYS' AND j.date <= trace_date + INTERVAL '7 DAYS';
 
     UPDATE Employees SET cc_end_date = trace_date + INTERVAL '7 DAYS' WHERE
-        eid IN (SELECT * FROM CloseContacts) AND cc_end_date < trace_date + INTERVAL '7 DAYS';
+        eid IN (SELECT * FROM CloseContacts) AND (cc_end_date < trace_date + INTERVAL '7 DAYS' OR cc_end_date IS NULL);
 
     -- Deleting close contacts from future meetings --> Done in trigger function below
 
@@ -1010,6 +1015,31 @@ DROP TRIGGER IF EXISTS trigger_health_dec ON HealthDeclaration;
 CREATE TRIGGER trigger_health_dec
 AFTER INSERT OR UPDATE ON HealthDeclaration
 FOR EACH ROW WHEN (NEW.fever) EXECUTE FUNCTION after_health_dec();
+
+--  TRIGGER TO allow updating temp for the day
+CREATE OR REPLACE FUNCTION before_health_dec() RETURNS TRIGGER AS $$
+    DECLARE
+        date_entry_exists INT;
+    BEGIN
+        SELECT COUNT(*) INTO date_entry_exists FROM HealthDeclaration h WHERE
+            NEW.eid = h.eid AND
+            NEW.date = h.date;
+        IF date_entry_exists > 0 THEN
+            UPDATE HealthDeclaration SET temp = NEW.temp WHERE
+                eid = NEW.eid AND
+                date = NEW.date;
+            RETURN NULL;
+        ELSE
+            RETURN NEW;
+        END IF;
+    END
+$$
+language plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_before_health_dec ON HealthDeclaration;
+CREATE TRIGGER trigger_before_health_dec
+BEFORE INSERT ON HealthDeclaration
+FOR EACH ROW EXECUTE FUNCTION before_health_dec();
 
 
 -- #########  ADMIN  #########-- 

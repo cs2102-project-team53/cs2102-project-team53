@@ -32,7 +32,7 @@ CloseContacts as (
     AND j.time = m.time /*same time; same session*/
 )
 SELECT * FROM CloseContacts;
--- INSERT INTO HealthDeclaration (date, eid, temp) VALUES ('2021-01-02', 223, 41.2);
+-- TEST QUERY: INSERT INTO HealthDeclaration (date, eid, temp) VALUES ('2021-01-02', 223, 41.2);
 WITH MeetingRoomsAffected as (
     SELECT m.room, m.floor, s.time FROM MeetingRooms m NATURAL JOIN Joins j NATURAL JOIN Sessions s
     WHERE j.eid = 223
@@ -48,7 +48,49 @@ CloseContacts as (
     AND j.floor = m.floor /*same room*/
     AND j.time = m.time /*same time; same session*/
 )
+SELECT * FROM CloseContacts NATURAL JOIN Employees e;
+
+-- TEST CASE 2:
+-- Expectation: Will do nothing because no fever
+-- SELECT * FROM approve_meeting(2,2, '2022-01-27', '14:00:00', '15:00:00', 453);
+
+SELECT * FROM Employees e, MeetingRooms mr WHERE mr.room = 2 AND mr.floor = 2 AND mr.did = e.did AND e.eid IN (Select * FROM Manager);
+WITH MeetingRoomsAffected as (
+    SELECT m.room, m.floor, s.time FROM MeetingRooms m NATURAL JOIN Joins j NATURAL JOIN Sessions s
+    WHERE j.eid = 450 -- booker of this meeting.
+    AND j.date < date '2022-01-28' AND j.date >= date '2022-01-28' - INTERVAL '3 DAYS'
+    AND s.approver_eid IS NOT NULL
+),
+
+-- Find close contacts: employees in the same approved meeting room FROM the past 3 (i.e., FROM day D-3 to day D) days
+CloseContacts as (
+    SELECT DISTINCT * FROM Joins j, MeetingRoomsAffected m
+    WHERE j.date < date'2022-01-28' AND j.date >= date '2022-01-28' - INTERVAL '3 DAYS'
+    AND j.room = m.room
+    AND j.floor = m.floor /*same room*/
+    AND j.time = m.time /*same time; same session*/
+)
 SELECT * FROM CloseContacts;
+-- TEST QUERY:
+-- DELETE FROM HealthDeclaration h WHERE h.eid = 285 AND h.date > '2022-01-28';
+-- INSERT INTO HealthDeclaration (date, eid, temp) VALUES ('2022-01-28', 285, 40);  -- session booked for 2022-01-27, 14:00:00, 450, 2, 2
+
+WITH MeetingRoomsAffected as (
+    SELECT m.room, m.floor, s.time FROM MeetingRooms m NATURAL JOIN Joins j NATURAL JOIN Sessions s
+    WHERE j.eid = 450
+    AND j.date < date '2022-01-28' AND j.date >= date '2022-01-28' - INTERVAL '3 DAYS'
+    AND s.approver_eid IS NOT NULL
+),
+
+-- Find close contacts: employees in the same approved meeting room FROM the past 3 (i.e., FROM day D-3 to day D) days
+CloseContacts as (
+    SELECT DISTINCT * FROM Joins j, MeetingRoomsAffected m
+    WHERE j.date < date'2022-01-28' AND j.date >= date '2022-01-28' - INTERVAL '3 DAYS'
+    AND j.room = m.room
+    AND j.floor = m.floor /*same room*/
+    AND j.time = m.time /*same time; same session*/
+)
+SELECT * FROM CloseContacts NATURAL JOIN Employees;
 --------------------------------------------------------------------------------------------------------------------------------------------
 
 -- FUNCTION: add_departments
