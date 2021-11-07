@@ -129,3 +129,96 @@ DELETE FROM meetingrooms where did=9;
 SELECT * FROM remove_department(9);
 SELECT * FROM departments;
 --------------------------------------------------------------------------------------------------------------------------------------------
+-- FUNCTION: add_room
+SELECT * FROM meetingrooms;
+SELECT * FROM add_room(2, 5, 'Test Room', 7, 7, 492);
+SELECT * FROM meetingrooms;
+--------------------------------------------------------------------------------------------------------------------------------------------
+-- FUNCTION: search_room
+-- Test 1: Search for rooms with unavailable capacity (should be empty)
+SELECT * from sessions order by date;
+SELECT * FROM search_room('20', '2022-01-01','9:15:00','11:33:00');
+
+-- Test 2: Search for rooms which should be available(should be all rooms)
+SELECT * from sessions order by date;
+SELECT * FROM search_room('5', '2022-01-01','9:15:00','11:33:00');
+
+-- Test 3: There is a session at 16:00:00 in room 1 floor 4 (all rooms except this)
+SELECT * from sessions order by date;
+SELECT * FROM search_room('5', '2022-01-01','9:15:00','18:33:00');
+
+-- Test 4: Rooms with capcity of 11 (only 1 room)
+SELECT * from sessions order by date;
+SELECT * FROM search_room('11', '2022-01-01','9:15:00','18:33:00');
+--------------------------------------------------------------------------------------------------------------------------------------------
+-- FUNCTION: join_meeting
+-- Test 1: Join a 1 hour slot with rounding
+SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+SELECT * FROM join_meeting(4, 2, '2022-04-15','17:00:00', '17:59:00', 124);
+SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+
+-- Test 2: Join a multi hour meeting **TODO: add data
+SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+SELECT * FROM join_meeting(4, 2, '2022-04-15','17:00:00', '17:59:00', 124);
+SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+
+-- Test 3: Try to joins meeting with time ending= invalid (The entry is added to all multi-hour slots or none)
+SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+SELECT * FROM join_meeting(4, 2, '2022-04-15','17:00:00', '19:59:00', 125);
+SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+
+
+-- Test 4: Cannot join past meetings **TODO: add past meeting data
+SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+SELECT * FROM join_meeting(4, 2, '2022-04-15','17:00:00', '17:59:00', 124);
+SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+
+-- Test 5: Cannot join with fever
+SELECT * FROM joins j where j.time='12:00:00' AND j.date='2022-01-07';
+
+SELECT * FROM declare_health(20, CURRENT_DATE, 38.6);
+SELECT * FROM healthdeclaration where eid=20;
+
+SELECT * FROM join_meeting(2, 3, '2022-01-07','12:00:00', '13:00:00', 20);
+SELECT * FROM joins j where j.time='12:00:00' AND j.date='2022-01-07';
+
+
+-- Test 6: Cannot join approved meeting
+SELECT * FROM approve_meeting(2, 3, '2022-01-07','12:00:00', '13:00:00', 478);
+SELECT * FROM sessions where date='2022-01-07';
+
+SELECT * FROM join_meeting(2, 3, '2022-01-07','12:00:00', '13:00:00', 23);
+SELECT * FROM sessions where date='2022-01-07';
+
+
+-- Test 7: Resigned employee cannot join
+SELECT * FROM joins where date = '2023-04-01';
+
+SELECT * FROM remove_employee(301, '2021-06-04');
+SELECT * FROM Employees where eid=301;
+SELECT * FROM join_meeting(2, 3, '2023-04-01','18:00:00', '19:00:00', 301);
+
+SELECT * FROM joins where date = '2023-04-01';
+
+-- Test 8: Cannot exceed capacity
+SELECT * FROM joins where date = '2023-04-01'; --8 employees
+SELECT * FROM updates where room=3 and floor=2; --cap=10
+SELECT * FROM join_meeting(2, 3, '2023-04-01','18:00:00', '19:00:00', 302);
+SELECT * FROM join_meeting(2, 3, '2023-04-01','18:00:00', '19:00:00', 303);
+SELECT * FROM join_meeting(2, 3, '2023-04-01','18:00:00', '19:00:00', 304);
+
+SELECT * FROM joins where date = '2023-04-01'; --10 employees (full)
+
+
+-- Test 9: Active Close contact cannot join **TODO
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
