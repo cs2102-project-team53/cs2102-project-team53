@@ -498,7 +498,7 @@ BEGIN
     SELECT COUNT(*) INTO is_booker FROM Booker b WHERE b.eid = NEW.booker_eid;
     
     -- Check if Booking is a future date
-    is_future_date := (NEW.date > CURRENT_DATE);
+    is_future_date := (NEW.date >= CURRENT_DATE);
     
     -- Check if Booker has resigned
     has_resigned := (SELECT e.resigned_date FROM Employees e WHERE e.eid = NEW.booker_eid)  IS NOT NULL;
@@ -1095,7 +1095,7 @@ $$ LANGUAGE plpgsql;
 -- This routine is to be used by employee to find all future meetings this employee is going to have that are already approved.
 -- Returns: The routine returns a table containing all meetings that are already approved for which this employee is joining from the given start date onwards. 
 --          Note that the employee need not be the one booking this meeting room.
--- SELECT * FROM approve_meeting(2,1, '2023-05-16', '17:00:00', '17:01:00', 478);
+-- SELECT * FROM approve_meeting(2, 1, '2023-05-16', '17:00:00', '17:01:00', 451);
 -- SELECT * FROM approve_meeting(2,3, '2023-01-07', '16:00:00', '17:00:00', 478);
 -- Usage: SELECT * FROM view_future_meeting('2021-02-20', 476)
 -- Noel

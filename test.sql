@@ -171,3 +171,256 @@ DELETE FROM meetingrooms where did=9;
 SELECT * FROM remove_department(9);
 SELECT * FROM departments;
 --------------------------------------------------------------------------------------------------------------------------------------------
+-- FUNCTION: add_room
+SELECT * FROM meetingrooms;
+SELECT * FROM add_room(2, 5, 'Test Room', 7, 7, 492);
+SELECT * FROM meetingrooms;
+--------------------------------------------------------------------------------------------------------------------------------------------
+-- FUNCTION: search_room
+-- Test 1: Search for rooms with unavailable capacity (should be empty)
+SELECT * from sessions order by date;
+SELECT * FROM search_room('20', '2022-01-01','9:15:00','11:33:00');
+
+-- Test 2: Search for rooms which should be available(should be all rooms)
+SELECT * from sessions order by date;
+SELECT * FROM search_room('5', '2022-01-01','9:15:00','11:33:00');
+
+-- Test 3: There is a session at 16:00:00 in room 1 floor 4 (all rooms except this)
+SELECT * from sessions order by date;
+SELECT * FROM search_room('5', '2022-01-01','9:15:00','18:33:00');
+
+-- Test 4: Rooms with capcity of 11 (only 1 room)
+SELECT * from sessions order by date;
+SELECT * FROM search_room('11', '2022-01-01','9:15:00','18:33:00');
+--------------------------------------------------------------------------------------------------------------------------------------------
+-- FUNCTION: join_meeting
+-- Test 1: Join a 1 hour slot with rounding
+SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+SELECT * FROM join_meeting(4, 2, '2022-04-15','17:00:00', '17:59:00', 124);
+SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+
+-- Test 2: Join a multi hour meeting **TODO: add data
+SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+SELECT * FROM join_meeting(4, 2, '2022-04-15','17:00:00', '17:59:00', 124);
+SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+
+-- Test 3: Try to joins meeting with time ending= invalid (The entry is added to all multi-hour valid slots or none)
+SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+SELECT * FROM join_meeting(4, 2, '2022-04-15','17:00:00', '19:59:00', 125);
+SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+
+
+-- Test 4: Cannot join past meetings **TODO: add past meeting data
+SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+SELECT * FROM join_meeting(4, 2, '2022-04-15','17:00:00', '17:59:00', 124);
+SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+
+-- Test 5: Cannot join with fever
+SELECT * FROM joins j where j.time='12:00:00' AND j.date='2022-01-07';
+
+SELECT * FROM declare_health(20, CURRENT_DATE, 38.6);
+SELECT * FROM healthdeclaration where eid=20;
+
+SELECT * FROM join_meeting(2, 3, '2022-01-07','12:00:00', '13:00:00', 20);
+SELECT * FROM joins j where j.time='12:00:00' AND j.date='2022-01-07';
+
+
+-- Test 6: Cannot join approved meeting
+SELECT * FROM approve_meeting(2, 3, '2022-01-07','12:00:00', '13:00:00', 478);
+SELECT * FROM sessions where date='2022-01-07';
+
+SELECT * FROM join_meeting(2, 3, '2022-01-07','12:00:00', '13:00:00', 23);
+SELECT * FROM joins where date='2022-01-07';
+
+
+-- Test 7: Resigned employee cannot join
+SELECT * FROM joins where date = '2023-04-01';
+
+SELECT * FROM remove_employee(301, '2021-06-04');
+SELECT * FROM Employees where eid=301;
+SELECT * FROM join_meeting(2, 3, '2023-04-01','18:00:00', '19:00:00', 301);
+
+SELECT * FROM joins where date = '2023-04-01';
+
+-- Test 8: Cannot exceed capacity
+SELECT * FROM joins where date = '2023-04-01'; --8 employees
+SELECT * FROM updates where room=3 and floor=2; --cap=10
+SELECT * FROM join_meeting(2, 3, '2023-04-01','18:00:00', '19:00:00', 302);
+SELECT * FROM join_meeting(2, 3, '2023-04-01','18:00:00', '19:00:00', 303);
+SELECT * FROM join_meeting(2, 3, '2023-04-01','18:00:00', '19:00:00', 304);
+
+SELECT * FROM joins where date = '2023-04-01'; --10 employees (full)
+
+
+-- Test 9: Active Close contact cannot join **TODO
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- FUNCTION: view_future_meeting
+
+-- Test 1: Approve meetings and call function
+SELECT * FROM joins j, sessions s where j.date=s.date and j.eid=476 order by j.date;
+SELECT * FROM view_future_meeting('2021-02-20', 476);
+
+SELECT * FROM approve_meeting(2, 1, '2023-05-16', '17:00:00', '17:01:00', 451);
+SELECT * FROM approve_meeting(2,3, '2023-01-07', '16:00:00', '17:00:00', 478);
+
+SELECT * FROM view_future_meeting('2021-02-20', 476);
+SELECT * FROM joins j, sessions s where j.date=s.date and j.eid=476 order by j.date;
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- FUNCTION: leave_meeting
+
+-- Test 1: Leave a single hour meeting
+SELECT * FROM joins where date='2022-04-15';
+SELECT * FROM leave_meeting(4, 2, '2022-04-15','17:00:00', '18:00:00', 407);
+SELECT * FROM joins where date='2022-04-15';
+
+-- Test 2: Employee cannot leave approved meeting
+SELECT * FROM sessions where approver_eid IS NOT NULL;
+SELECT * FROM leave_meeting(2, 1, '2023-05-16','17:00:00', '18:00:00', 355);
+SELECT * FROM joins where date='2023-05-16';
+
+-- Test 3: People with fever on current day can leave meeting
+SELECT * FROM sessions where approver_eid IS NOT NULL;
+SELECT * FROM joins where date='2023-05-16';
+SELECT * FROM declare_health(51, CURRENT_DATE, 38.6); -- This employee is removed from all future meeting approved or not
+SELECT * FROM joins where date='2023-05-16';
+
+-- Test 4: Meeting is cancelled if Booker leaves
+SELECT * FROM sessions where date='2022-04-01';
+SELECT * FROM joins where date='2022-04-01';
+SELECT * FROM leave_meeting(3, 2, '2022-04-01','14:00:00', '15:00:00', 472);
+SELECT * FROM sessions where date='2022-04-01';
+SELECT * FROM joins where date='2022-04-01';
+
+-- Test 5: If booker has fever, then meeting is cancelled
+SELECT * FROM sessions where approver_eid IS NOT NULL;
+SELECT * FROM joins where date='2023-05-16';
+SELECT * FROM declare_health(355, CURRENT_DATE, 38.6);
+SELECT * FROM joins where date='2023-05-16';
+SELECT * FROM sessions where date='2023-05-16';
+
+-- Test 6: Active close contacts can leave meeting **TODO: Since the cc only if cc_end -7 <=cur_day <= cc_end need to add data
+
+-- Test 7: Leave multi-hour meeting (Can leave partially but must be valid. If any leave time is invalid then rollback) **TODO: add multi-hour data
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- FUNCTION: add_employee
+-- Test 1: New junior will be added
+SELECT * FROM employees ORDER BY eid DESC LIMIT 5;
+SELECT * FROM add_employee('Test Junior', 90915245, 'JUNIOR', 1);
+SELECT * FROM employees ORDER BY eid DESC LIMIT 5;
+SELECT * FROM junior ORDER BY eid DESC LIMIT 5;
+
+-- Test 2: New senior will be added
+SELECT * FROM employees ORDER BY eid DESC;
+SELECT * FROM add_employee('Test Senior', 90915245, 'SENIOR', 1);
+SELECT * FROM employees ORDER BY eid DESC;
+SELECT * FROM booker ORDER BY eid DESC LIMIT 5;
+SELECT * FROM senior ORDER BY eid DESC LIMIT 5;
+
+-- Test 3: New manager will be added
+SELECT * FROM employees ORDER BY eid DESC LIMIT 5;
+SELECT * FROM add_employee('Test Manager', 90915245, 'MANAGER', 1);
+SELECT * FROM employees ORDER BY eid DESC LIMIT 5;
+SELECT * FROM booker ORDER BY eid DESC LIMIT 5;
+SELECT * FROM manager ORDER BY eid DESC LIMIT 5;
+
+-- Test 4: Cannot add employees without adding to junior, senior or manager
+-- Expected: ERROR:  An employee needs to be one of the three kinds of employees: junior, senior or manager
+INSERT INTO employees VALUES(1000, 1, 'Manual insert', 'Manualinsert@gmail.com' 90915245);
+
+-- Test 5: An employee cannot have two types
+-- Expected: ERROR:  An employee cannot be both a junior and a booker(senior/manager)
+INSERT INTO junior values(503);
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- FUNCTION: remove_employee
+-- Test 1: Resigned date will be set to the date passed as input
+SELECT * FROM employees WHERE resigned_date IS NOT NULL ORDER BY resigned_date DESC LIMIT 5;
+SELECT * FROM remove_employee(501, '2021-11-07');
+SELECT * FROM employees WHERE resigned_date IS NOT NULL ORDER BY resigned_date DESC LIMIT 5;
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- FUNCTION: view_manager_report
+-- Test 1: Manager report
+SELECT did FROM employees WHERE eid=500;
+SELECT s.date, s.time, m.did, s.approver_eid FROM Sessions s NATURAL JOIN MeetingRooms m WHERE s.approver_eid IS NULL AND m.did=6 AND '2021-02-04' <= s.date ORDER BY s.date, s.time ASC;
+SELECT * FROM view_manager_report('2021-02-04', 500);
+
+-- Test 2: If not a manager, return nothing
+SELECT * FROM manager WHERE eid=400;
+SELECT * FROM view_manager_report('2021-02-04', 400);
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- FUNCTION: book_room()
+-- Booker must not have a fever
+-- EXPECTED - ERROR:  Bookers with a fever cannot book a room
+SELECT * FROM declare_health(318, '2021-11-07', 38.0);
+SELECT * FROM book_room(1, 1, '2021-11-07', '10:00:00', '14:00:00', 318);
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- Only Booker (ISA senior/manager) can book a room
+-- EXPECTED - ERROR:  Employee is not a Booker(Senior/Manager)
+SELECT * FROM book_room(1, 1, '2021-11-07', '10:00:00', '14:00:00', 299);
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- Employee booking the room automatically joins the meeting
+-- EXPECTED - An entry corresponding to the book_room() details is found in Joins, where the booker is added into Joins
+SELECT * FROM book_room(1, 1, '2021-12-19', '10:00:00', '14:00:00', 319);
+SELECT * FROM Joins WHERE eid = 319
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- Can only book room for future meetings/dates
+-- EXPECTED - ERROR:  Rooms can only be booked for future dates
+SELECT * FROM book_room(1, 1, '2020-12-19', '10:00:00', '14:00:00', 319);
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- Booker must not be resigned
+-- ERROR:  Resigned employees cannot book a room
+SELECT * FROM remove_employee(320, '2021-06-04');
+SELECT * FROM book_room(1, 1, '2021-12-20', '10:00:00', '14:00:00', 320);
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- FUNCTION: unbook_room()
+-- Remove participants of the meeting after unbook_room()
+
+-- Shows the table containing all the participants of this meeting in the Joins table
+select * from joins where date = '2022-01-01' AND time = '16:00:00' AND room = 1 AND floor = 4
+
+-- Unbooks this meeting
+select * from unbook_room(4, 1, '2022-01-01', '16:00:00', '17:00:00', 443);
+
+-- Participants are now removed from the Joins table
+select * from joins where date = '2022-01-01' AND time = '16:00:00' AND room = 1 AND floor = 4
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- FUNCTION: approve_meeting()
+-- Only manager can approve meetings
+-- EXPECTED - ERROR:  Employee is not a Manager (eid 450 is not a manager)
+select * from approve_meeting(1, 3, '2022-01-16', '09:00:00', '10:00:00', 450)
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- The approved meeting must be in the same Department as the Manager
+-- EXPECTED - ERROR:  Manager is not in the same department as booked room
+select * from approve_meeting(2, 2, '2022-01-20', '09:00:00', '10:00:00', 452)
+
