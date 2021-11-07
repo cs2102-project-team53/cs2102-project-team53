@@ -9,13 +9,13 @@ SELECT * FROM HealthDeclaration h WHERE h.eid = 500 ;
 -- FUNCTION: contact_tracing
 -- TEST CASE 1:
 -- Expectation: Will return a set of eids and these will be deleted from Joins
---DELETE FROM Sessions  WHERE date = '2022-01-01' AND room = 1 and floor = 4 AND time='16:00:00';
---INSERT INTO Sessions  (time, date, room, floor, booker_eid) VALUES ('16:00:00', '2022-01-01',1,  4, 433);
--- insert into Joins (eid, time, date, room, floor) values (1, '16:00:00', '2022-01-01', 1, 4);
--- insert into Joins (eid, time, date, room, floor) values (223, '16:00:00', '2022-01-01', 1, 4);
--- insert into Joins (eid, time, date, room, floor) values (400, '16:00:00', '2022-01-01', 1, 4);
--- insert into Joins (eid, time, date, room, floor) values (20, '16:00:00', '2022-01-01', 1, 4);
- SELECT * FROM approve_meeting(4, 1, '2022-01-01', '16:00:00', '17:00:00', 482);
+DELETE FROM Sessions  WHERE date = '2022-01-01' AND room = 1 and floor = 4 AND time='16:00:00';
+INSERT INTO Sessions  (time, date, room, floor, booker_eid) VALUES ('16:00:00', '2022-01-01',1,  4, 433);
+insert into Joins (eid, time, date, room, floor) values (1, '16:00:00', '2022-01-01', 1, 4);
+insert into Joins (eid, time, date, room, floor) values (223, '16:00:00', '2022-01-01', 1, 4);
+insert into Joins (eid, time, date, room, floor) values (400, '16:00:00', '2022-01-01', 1, 4);
+insert into Joins (eid, time, date, room, floor) values (20, '16:00:00', '2022-01-01', 1, 4);
+SELECT * FROM approve_meeting(4, 1, '2022-01-01', '16:00:00', '17:00:00', 482);
 WITH MeetingRoomsAffected as (
     SELECT m.room, m.floor, s.time FROM MeetingRooms m NATURAL JOIN Joins j NATURAL JOIN Sessions s
     WHERE j.eid = 223
@@ -32,7 +32,11 @@ CloseContacts as (
     AND j.time = m.time /*same time; same session*/
 )
 SELECT * FROM CloseContacts;
--- TEST QUERY: INSERT INTO HealthDeclaration (date, eid, temp) VALUES ('2021-01-02', 223, 41.2);
+-- TEST QUERY:
+
+DELETE FROM healthdeclaration WHERE date > '2021-01-02' AND eid = 223;
+INSERT INTO HealthDeclaration (date, eid, temp) VALUES ('2022-01-02', 223, 41.2);
+
 WITH MeetingRoomsAffected as (
     SELECT m.room, m.floor, s.time FROM MeetingRooms m NATURAL JOIN Joins j NATURAL JOIN Sessions s
     WHERE j.eid = 223
@@ -49,7 +53,8 @@ CloseContacts as (
     AND j.time = m.time /*same time; same session*/
 )
 SELECT * FROM CloseContacts NATURAL JOIN Employees e;
-
+SELECT * FROM Employees WHERE eid in (1,20,223,400, 433);
+SELECT * FROM Joins WHERE  eid in (1,20,223,400, 433) AND date <= '2022-01-02';
 -- TEST CASE 2:
 -- Expectation: Will do nothing because no fever
 -- SELECT * FROM approve_meeting(2,2, '2022-01-27', '14:00:00', '15:00:00', 453);
@@ -100,6 +105,28 @@ SELECT * FROM CloseContacts NATURAL JOIN Employees;
 SELECT * FROM non_compliance('2021-10-18', '2021-10-19');
 SELECT * FROM non_compliance('2021-11-16', '2021-11-19');
 --------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- FUNCTION: change_capacity
+-- TEST CASE 1:
+-- Expectation: Disallowed because manager from diff dept to meeting room
+-- SELECT * FROM change_capacity(2,3, 0, '2021-05-01', 499) ;
+-- TEST CASE 2:
+-- Expectation: Allowed because manager from same dept. Sessions will be deleted
+-- INSERT INTO Sessions (time, date, room, floor, booker_eid, approver_eid) VALUES ('14:00:00', '2022-09-01', 2, 3, 400, null);
+-- INSERT INTO Joins (eid, time, date, room, floor) VALUES (1, '14:00:00', '2022-09-01', 2,3);
+-- INSERT INTO Joins (eid, time, date, room, floor) VALUES (2, '14:00:00', '2022-09-01', 2,3);
+-- INSERT INTO Joins (eid, time, date, room, floor) VALUES (3, '14:00:00', '2022-09-01', 2,3);
+-- SELECT * FROM (Employees e NATURAL JOIN Manager m), MeetingRooms mr WHERE mr.room = 2 AND mr.floor = 3 AND  mr.did = e.did;
+-- SELECT * FROM Sessions s WHERE s.room = 2 AND s.floor = 3 AND s.date >= '2022-09-01';
+-- SELECT * FROM Joins j WHERE j.room = 2 AND j.floor = 3 AND j.date >= '2022-09-01';
+-- SELECT * FROM change_capacity(3,2, 0, '2021-05-01', 500) ;
+-- SELECT * FROM Sessions s WHERE s.room = 2 AND s.floor = 3 AND s.date >= '2022-09-01';
+-- SELECT * FROM Joins j WHERE j.room = 2 AND j.floor = 3 AND j.date >= '2022-09-01';
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
 
 -- FUNCTION: add_departments
 -- Expectation: New dept will be added
