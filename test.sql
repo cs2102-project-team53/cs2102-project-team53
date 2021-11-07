@@ -215,7 +215,7 @@ SELECT * FROM approve_meeting(2, 3, '2022-01-07','12:00:00', '13:00:00', 478);
 SELECT * FROM sessions where date='2022-01-07';
 
 SELECT * FROM join_meeting(2, 3, '2022-01-07','12:00:00', '13:00:00', 23);
-SELECT * FROM sessions where date='2022-01-07';
+SELECT * FROM joins where date='2022-01-07';
 
 
 -- Test 7: Resigned employee cannot join
