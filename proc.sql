@@ -503,8 +503,8 @@ BEGIN
     -- Check if Booker has resigned
     has_resigned := (SELECT e.resigned_date FROM Employees e WHERE e.eid = NEW.booker_eid)  IS NOT NULL;
 	
-	-- Check if Booker's cc_end_date falls between today and 7days before today to see if employee is currently a close contact
-    SELECT COUNT(*) INTO is_close_contact FROM Employees e WHERE e.eid = NEW.booker_eid AND e.cc_end_date <= CURRENT_DATE AND e.cc_end_date>= CURRENT_DATE - INTERVAL '7 DAYS';
+	-- Check if current_date falls betwwen cc_end_date cc_end_date-7 to see if employee is an active close contact
+    SELECT COUNT(*) INTO is_close_contact FROM Employees e WHERE e.eid=OLD.eid AND e.cc_end_date >= CURRENT_DATE AND (e.cc_end_date - INTERVAL '7 DAYS')<=CURRENT_DATE;
     
     IF has_fever THEN
         RAISE EXCEPTION 'Bookers with a fever cannot book a room';
@@ -675,8 +675,8 @@ BEGIN
     HAVING room=NEW.room and floor=NEW.floor
     );
 
-    -- Check if employee cc_end_date falls between today and 7days before today to see if employee is currently a close contact
-    SELECT COUNT(*) INTO is_close_contact FROM Employees e WHERE e.eid=NEW.eid AND e.cc_end_date <= CURRENT_DATE AND e.cc_end_date>= CURRENT_DATE - INTERVAL '7 DAYS';
+    -- Check if current_date falls betwwen cc_end_date cc_end_date-7 to see if employee is an active close contact
+    SELECT COUNT(*) INTO is_close_contact FROM Employees e WHERE e.eid=OLD.eid AND e.cc_end_date >= CURRENT_DATE AND (e.cc_end_date - INTERVAL '7 DAYS')<=CURRENT_DATE;
                                    
   
     IF has_fever THEN
@@ -732,6 +732,7 @@ BEGIN
         start_time:= start_time + '01:00:00';
     END LOOP;
 
+    -- If the person leaving is a booker, then remove whole meeting
     SELECT COUNT(*) INTO is_booker FROM Sessions s 
     WHERE s.booker_eid=_eid 
     AND s.time=(SELECT date_trunc('hour', _start_hour + interval '0 minute'))
@@ -754,11 +755,36 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION can_leave_meeting()
 -- Constraints for Leaving
--- 1. Cannot leave approved meetings [23]
+-- 1. Can only leave future meetings
+-- 2. People with fever can leave approved meetings
+-- 3. Active close contacts can leave approved meeting
+-- 4. Cannot leave approved meetings [23]
 RETURNS TRIGGER AS $$
 DECLARE
     is_meeting_approved INT;
+    is_future_date BOOLEAN;
+    has_fever BOOLEAN;
+    is_close_contact INT;
 BEGIN
+    -- Check if Booking is a future date
+    is_future_date := (OLD.date >= CURRENT_DATE);
+    
+    IF is_future_date = FALSE THEN
+        RAISE EXCEPTION 'Can only leave future meetings';
+    END IF;
+    
+    -- Check if employee has fever on the current date
+    SELECT has_fever FROM HealthDeclaration h WHERE h.eid=OLD.eid AND h.date= CURRENT_DATE;
+    IF has_fever = TRUE THEN
+        RETURN OLD;
+    END IF;
+
+    -- Check if current_date falls betwwen cc_end_date cc_end_date-7 to see if employee is an active close contact
+    SELECT COUNT(*) INTO is_close_contact FROM Employees e WHERE e.eid=OLD.eid AND e.cc_end_date >= CURRENT_DATE AND (e.cc_end_date - INTERVAL '7 DAYS')<=CURRENT_DATE;
+    IF is_close_contact = 1 THEN
+        RETURN OLD;
+    END IF;
+
     -- check if meeting is approved
     SELECT COALESCE(approver_eid, 0) INTO is_meeting_approved FROM Sessions s 
     WHERE s.time = OLD.time
