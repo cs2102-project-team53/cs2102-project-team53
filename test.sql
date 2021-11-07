@@ -91,6 +91,14 @@ CloseContacts as (
     AND j.time = m.time /*same time; same session*/
 )
 SELECT * FROM CloseContacts NATURAL JOIN Employees;
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- FUNCTION: non_compliance
+-- Expectation: Shows lists of employees who didn't declare temp
+SELECT * FROM non_compliance('2021-10-18', '2021-10-19');
+SELECT * FROM non_compliance('2021-11-16', '2021-11-19');
 --------------------------------------------------------------------------------------------------------------------------------------------
 
 -- FUNCTION: add_departments
