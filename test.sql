@@ -54,6 +54,7 @@ CloseContacts as (
 )
 SELECT * FROM CloseContacts NATURAL JOIN Employees e;
 SELECT * FROM Employees WHERE eid in (1,20,223,400, 433);
+SELECT * FROM Joins WHERE  eid in (1,20,223,400, 433) AND date <= '2022-01-02';
 -- TEST CASE 2:
 -- Expectation: Will do nothing because no fever
 -- SELECT * FROM approve_meeting(2,2, '2022-01-27', '14:00:00', '15:00:00', 453);
@@ -104,6 +105,28 @@ SELECT * FROM CloseContacts NATURAL JOIN Employees;
 SELECT * FROM non_compliance('2021-10-18', '2021-10-19');
 SELECT * FROM non_compliance('2021-11-16', '2021-11-19');
 --------------------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- FUNCTION: change_capacity
+-- TEST CASE 1:
+-- Expectation: Disallowed because manager from diff dept to meeting room
+-- SELECT * FROM change_capacity(2,3, 0, '2021-05-01', 499) ;
+-- TEST CASE 2:
+-- Expectation: Allowed because manager from same dept. Sessions will be deleted
+-- INSERT INTO Sessions (time, date, room, floor, booker_eid, approver_eid) VALUES ('14:00:00', '2022-09-01', 2, 3, 400, null);
+-- INSERT INTO Joins (eid, time, date, room, floor) VALUES (1, '14:00:00', '2022-09-01', 2,3);
+-- INSERT INTO Joins (eid, time, date, room, floor) VALUES (2, '14:00:00', '2022-09-01', 2,3);
+-- INSERT INTO Joins (eid, time, date, room, floor) VALUES (3, '14:00:00', '2022-09-01', 2,3);
+-- SELECT * FROM (Employees e NATURAL JOIN Manager m), MeetingRooms mr WHERE mr.room = 2 AND mr.floor = 3 AND  mr.did = e.did;
+-- SELECT * FROM Sessions s WHERE s.room = 2 AND s.floor = 3 AND s.date >= '2022-09-01';
+-- SELECT * FROM Joins j WHERE j.room = 2 AND j.floor = 3 AND j.date >= '2022-09-01';
+-- SELECT * FROM change_capacity(3,2, 0, '2021-05-01', 500) ;
+-- SELECT * FROM Sessions s WHERE s.room = 2 AND s.floor = 3 AND s.date >= '2022-09-01';
+-- SELECT * FROM Joins j WHERE j.room = 2 AND j.floor = 3 AND j.date >= '2022-09-01';
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
 
 -- FUNCTION: add_departments
 -- Expectation: New dept will be added
