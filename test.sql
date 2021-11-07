@@ -242,10 +242,55 @@ SELECT * FROM joins where date = '2023-04-01'; --10 employees (full)
 --------------------------------------------------------------------------------------------------------------------------------------------
 
 
+--------------------------------------------------------------------------------------------------------------------------------------------
 
+-- FUNCTION: add_employee
+-- Test 1: New junior will be added
+SELECT * FROM employees ORDER BY eid DESC LIMIT 5;
+SELECT * FROM add_employee('Test Junior', 90915245, 'JUNIOR', 1);
+SELECT * FROM employees ORDER BY eid DESC LIMIT 5;
+SELECT * FROM junior ORDER BY eid DESC LIMIT 5;
 
+-- Test 2: New senior will be added
+SELECT * FROM employees ORDER BY eid DESC;
+SELECT * FROM add_employee('Test Senior', 90915245, 'SENIOR', 1);
+SELECT * FROM employees ORDER BY eid DESC;
+SELECT * FROM booker ORDER BY eid DESC LIMIT 5;
+SELECT * FROM senior ORDER BY eid DESC LIMIT 5;
 
+-- Test 3: New manager will be added
+SELECT * FROM employees ORDER BY eid DESC LIMIT 5;
+SELECT * FROM add_employee('Test Manager', 90915245, 'MANAGER', 1);
+SELECT * FROM employees ORDER BY eid DESC LIMIT 5;
+SELECT * FROM booker ORDER BY eid DESC LIMIT 5;
+SELECT * FROM manager ORDER BY eid DESC LIMIT 5;
 
+-- Test 4: Cannot add employees without adding to junior, senior or manager
+-- Expected: ERROR:  An employee needs to be one of the three kinds of employees: junior, senior or manager
+INSERT INTO employees VALUES(1000, 1, 'Manual insert', 'Manualinsert@gmail.com' 90915245);
 
+-- Test 5: An employee cannot have two types
+-- Expected: ERROR:  An employee cannot be both a junior and a booker(senior/manager)
+INSERT INTO junior values(503);
 
+--------------------------------------------------------------------------------------------------------------------------------------------
 
+-- FUNCTION: remove_employee
+-- Test 1: Resigned date will be set to the date passed as input
+SELECT * FROM employees WHERE resigned_date IS NOT NULL ORDER BY resigned_date DESC LIMIT 5;
+SELECT * FROM remove_employee(501, '2021-11-07');
+SELECT * FROM employees WHERE resigned_date IS NOT NULL ORDER BY resigned_date DESC LIMIT 5;
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- FUNCTION: view_manager_report
+-- Test 1: Manager report
+SELECT did FROM employees WHERE eid=500;
+SELECT s.date, s.time, m.did, s.approver_eid FROM Sessions s NATURAL JOIN MeetingRooms m WHERE s.approver_eid IS NULL AND m.did=6 AND '2021-02-04' <= s.date ORDER BY s.date, s.time ASC;
+SELECT * FROM view_manager_report('2021-02-04', 500);
+
+-- Test 2: If not a manager, return nothing
+SELECT * FROM manager WHERE eid=400;
+SELECT * FROM view_manager_report('2021-02-04', 400);
+
+--------------------------------------------------------------------------------------------------------------------------------------------
