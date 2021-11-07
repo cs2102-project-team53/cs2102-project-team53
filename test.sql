@@ -51,3 +51,31 @@ CloseContacts as (
 SELECT * FROM CloseContacts;
 --------------------------------------------------------------------------------------------------------------------------------------------
 
+-- FUNCTION: add_departments
+-- Expectation: New dept will be added
+SELECT * FROM departments;
+SELECT * FROM add_department(9, 'Test Department');
+SELECT * FROM departments;
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+-- FUNCTION: add_departments
+-- Test 1: Remove department without any rooms/employees
+SELECT * FROM remove_department(9);
+SELECT * FROM departments;
+
+-- Test 2: Remove department with employees (will fail)
+SELECT * FROM remove_department(1);
+SELECT * FROM departments;
+
+-- Test 3: Remove department with no employees but rooms (will fail)
+SELECT * FROM add_department(9, 'Test Department');
+SELECT * FROM add_employee('Charles', 90915145, 'MANAGER', 9); --Add a manager to allow add_room
+SELECT * FROM add_room (5, 2, 'Test Room', 9, 7, 501);
+SELECT * FROM remove_employee(501, '2021-06-04');
+SELECT * FROM remove_department(9);
+-- Remove meeting room and show it works
+DELETE FROM Updates where room=5;
+DELETE FROM meetingrooms where did=9;
+SELECT * FROM remove_department(9);
+SELECT * FROM departments;
+--------------------------------------------------------------------------------------------------------------------------------------------
