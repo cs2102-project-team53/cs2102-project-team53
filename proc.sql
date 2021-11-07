@@ -925,13 +925,16 @@ $$ language plpgsql;
 -- Van
 CREATE OR REPLACE FUNCTION contact_tracing(IN eid_in INT, IN trace_date DATE)
 RETURNS TABLE(cc_eid INT) AS $$
+DECLARE
+    cc_end date;
 BEGIN
+    cc_end = (trace_date + INTERVAL '7 DAYS');
     IF NOT (SELECT h.fever FROM HealthDeclaration h
          WHERE h.eid = eid_in AND h.date = trace_date) THEN
              RAISE NOTICE  '## Employee doesnt have fever, aborting';
         RETURN;
     ELSE
-        RAISE NOTICE 'Employee has fever, checking for close contacts';
+        RAISE NOTICE 'Employee has fever on %, checking for close contacts', trace_date;
     -- Find all approved meetings FROM the past 3 days which employee was part of
 	WITH MeetingRoomsAffected as (
         SELECT m.room, m.floor FROM MeetingRooms m NATURAL JOIN Joins j NATURAL JOIN Sessions s
@@ -944,30 +947,32 @@ BEGIN
     CloseContacts as (
 		SELECT DISTINCT j.eid FROM Joins j, MeetingRoomsAffected m
 		WHERE j.date < trace_date AND j.date >= trace_date - INTERVAL '3 DAYS'
+		AND j.eid <> eid_in
 		AND j.room = m.room
 		AND j.floor = m.floor /*same room*/
 	)
-
-    UPDATE Employees SET cc_end_date = trace_date WHERE
+    UPDATE Employees SET cc_end_date = cc_end WHERE
         eid IN (SELECT * FROM CloseContacts);
+
+    RAISE NOTICE 'Updated Employees cc_end_date';
 
     RETURN QUERY
 	-- Find all approved meetings FROM the past 3 days which employee was part of
 	WITH MeetingRoomsAffected as (
-        SELECT m.room, m.floor, s.time FROM MeetingRooms m NATURAL JOIN Joins j NATURAL JOIN Sessions s
-        WHERE j.eid = eid_in
-        AND j.date < trace_date AND j.date >= trace_date - INTERVAL '3 DAYS'
-        AND s.approver_eid IS NOT NULL
-	),
-	-- Find close contacts: employees in the same approved meeting room FROM the past 3 (i.e., FROM day D-3 to day D) days
-    CloseContacts as (
-		SELECT DISTINCT j.eid FROM Joins j, MeetingRoomsAffected m
-		WHERE j.date < trace_date AND j.date >= trace_date - INTERVAL '3 DAYS'
-		AND j.room = m.room
-		AND j.floor = m.floor /*same room*/
-        AND j.time = m.time /*same time; same session*/
-	)
-	SELECT * FROM CloseContacts;
+    SELECT m.room, m.floor, s.time FROM MeetingRooms m NATURAL JOIN Joins j NATURAL JOIN Sessions s
+    WHERE j.eid = eid_in
+    AND j.date < trace_date AND j.date >= trace_date - INTERVAL '3 DAYS'
+    AND s.approver_eid IS NOT NULL
+),
+CloseContacts as (
+    SELECT DISTINCT j.eid FROM Joins j, MeetingRoomsAffected m
+    WHERE j.date < trace_date AND j.date >= trace_date - INTERVAL '3 DAYS'
+    AND j.eid <> eid_in
+    AND j.room = m.room
+    AND j.floor = m.floor /*same room*/
+    AND j.time = m.time /*same time; same session*/
+)
+SELECT * FROM CloseContacts ;
     -- √ If the employee is the one booking the room, the booking is cancelled, approved or not.
  	DELETE FROM Sessions WHERE (booker_eid = eid_in AND date >= trace_date AND date >= CURRENT_DATE );
 -- 	-- √ The employee is removed FROM all future meeting room booking, approved or not. √
@@ -982,11 +987,11 @@ BEGIN
     DELETE From Joins j WHERE
         j.eid = NEW.eid AND
         j.date <= NEW.cc_end_date AND
-        j.date >= CURRENT_DATE;
+        j.date >= NEW.cc_end_date - INTERVAL '7 DAYS';
     DELETE From Sessions s WHERE
         s.booker_eid = NEW.eid AND
         s.date <= NEW.cc_end_date AND
-        s.date >= CURRENT_DATE;
+        s.date >=NEW.cc_end_date - INTERVAL '7 DAYS';
     RETURN NULL;
 END;
 $$ language plpgsql;
