@@ -498,7 +498,7 @@ BEGIN
     SELECT COUNT(*) INTO is_booker FROM Booker b WHERE b.eid = NEW.booker_eid;
     
     -- Check if Booking is a future date
-    is_future_date := (NEW.date > CURRENT_DATE);
+    is_future_date := (NEW.date >= CURRENT_DATE);
     
     -- Check if Booker has resigned
     has_resigned := (SELECT e.resigned_date FROM Employees e WHERE e.eid = NEW.booker_eid)  IS NOT NULL;

@@ -349,3 +349,63 @@ SELECT * FROM manager WHERE eid=400;
 SELECT * FROM view_manager_report('2021-02-04', 400);
 
 --------------------------------------------------------------------------------------------------------------------------------------------
+
+-- FUNCTION: book_room()
+-- Booker must not have a fever
+-- EXPECTED - ERROR:  Bookers with a fever cannot book a room
+SELECT * FROM declare_health(318, '2021-11-07', 38.0);
+SELECT * FROM book_room(1, 1, '2021-11-07', '10:00:00', '14:00:00', 318);
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- Only Booker (ISA senior/manager) can book a room
+-- EXPECTED - ERROR:  Employee is not a Booker(Senior/Manager)
+SELECT * FROM book_room(1, 1, '2021-11-07', '10:00:00', '14:00:00', 299);
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- Employee booking the room automatically joins the meeting
+-- EXPECTED - An entry corresponding to the book_room() details is found in Joins, where the booker is added into Joins
+SELECT * FROM book_room(1, 1, '2021-12-19', '10:00:00', '14:00:00', 319);
+SELECT * FROM Joins WHERE eid = 319
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- Can only book room for future meetings/dates
+-- EXPECTED - ERROR:  Rooms can only be booked for future dates
+SELECT * FROM book_room(1, 1, '2020-12-19', '10:00:00', '14:00:00', 319);
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- Booker must not be resigned
+-- ERROR:  Resigned employees cannot book a room
+SELECT * FROM remove_employee(320, '2021-06-04');
+SELECT * FROM book_room(1, 1, '2021-12-20', '10:00:00', '14:00:00', 320);
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- FUNCTION: unbook_room()
+-- Remove participants of the meeting after unbook_room()
+
+-- Shows the table containing all the participants of this meeting in the Joins table
+select * from joins where date = '2022-01-01' AND time = '16:00:00' AND room = 1 AND floor = 4
+
+-- Unbooks this meeting
+select * from unbook_room(4, 1, '2022-01-01', '16:00:00', '17:00:00', 443);
+
+-- Participants are now removed from the Joins table
+select * from joins where date = '2022-01-01' AND time = '16:00:00' AND room = 1 AND floor = 4
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- FUNCTION: approve_meeting()
+-- Only manager can approve meetings
+-- EXPECTED - ERROR:  Employee is not a Manager (eid 450 is not a manager)
+select * from approve_meeting(1, 3, '2022-01-16', '09:00:00', '10:00:00', 450)
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- The approved meeting must be in the same Department as the Manager
+-- EXPECTED - ERROR:  Manager is not in the same department as booked room
+select * from approve_meeting(2, 2, '2022-01-20', '09:00:00', '10:00:00', 452)
+
