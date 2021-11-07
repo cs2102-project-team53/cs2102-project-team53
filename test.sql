@@ -1,7 +1,6 @@
 -- FUNCTION: contact_tracing
 -- TEST CASE 1:
 -- Expectation: Will return a set of eids and these will be deleted from Joins
-
 SELECT * FROM declare_health(223, '2021-12-08', 37);
 UPDATE Employees SET cc_end_date = null;
 SELECT * FROM Employees WHERE eid in (1,20,223,400, 433);
@@ -37,39 +36,6 @@ SELECT * FROM Employees WHERE eid in (1,20,223,400, 433);
 
 
 -- TEST CASE 2:
--- Expectation: Will delete future bookings of employee w fever
-SELECT * FROM Employees e, MeetingRooms mr WHERE mr.room = 2 AND mr.floor = 2 AND mr.did = e.did AND e.eid IN (Select * FROM Manager);
-DELETE FROM Sessions WHERE  time = '14:00:00' AND date = '2022-01-27' AND room =  2 AND floor = 2 and booker_eid = 450;
-SELECT * from book_room(2, 2, '2022-01-27', '14:00:00', '15:00:00', 450);
-SELECT * FROM join_meeting(2,  2, '2022-01-27', '14:00:00', '15:00:00', 1);
-SELECT * FROM join_meeting(2, 2, '2022-01-27', '14:00:00', '15:00:00', 2);
-SELECT * FROM join_meeting(2, 2, '2022-01-27', '14:00:00', '15:00:00', 3);
-SELECT * FROM approve_meeting(2,2, '2022-01-27', '14:00:00', '15:00:00', 453);
-SELECT * from book_room(2, 2, '2022-01-29', '14:00:00', '15:00:00', 450);
-WITH MeetingRoomsAffected as (
-    SELECT m.room, m.floor, s.time FROM MeetingRooms m NATURAL JOIN Joins j NATURAL JOIN Sessions s
-    WHERE j.eid = 450 -- booker of this meeting.
-    AND j.date < date '2022-01-28' AND j.date >= date '2022-01-28' - INTERVAL '3 DAYS'
-    AND s.approver_eid IS NOT NULL
-),
-
--- Find close contacts: employees in the same approved meeting room FROM the past 3 (i.e., FROM day D-3 to day D) days
-CloseContacts as (
-    SELECT DISTINCT * FROM Joins j, MeetingRoomsAffected m
-    WHERE j.date < date'2022-01-28' AND j.date >= date '2022-01-28' - INTERVAL '3 DAYS'
-    AND j.room = m.room
-    AND j.floor = m.floor /*same room*/
-    AND j.time = m.time /*same time; same session*/
-)
-SELECT * FROM CloseContacts;
--- TEST QUERY:
-SELECT * FROM declare_health(450, '2022-01-28', 40);
-SELECT * FROM contact_tracing(450, '2022-01-28');
-SELECT * FROM Sessions WHERE booker_eid = 450 AND date > '2022-01-28';
-SELECT * FROM Employees WHERE eid in (1,2,3);
-
--- TEST CASE 3:
--- Expectation: Do nothing cause no fever
 SELECT * from declare_health(450,'2022-01-28', 36);
 Update Employees SET cc_end_date = null;
 SELECT * FROM Employees WHERE eid in (1,2,3);
@@ -87,8 +53,6 @@ WITH MeetingRoomsAffected as (
     AND j.date < date '2022-01-28' AND j.date >= date '2022-01-28' - INTERVAL '3 DAYS'
     AND s.approver_eid IS NOT NULL
 ),
-
--- Find close contacts: employees in the same approved meeting room FROM the past 3 (i.e., FROM day D-3 to day D) days
 CloseContacts as (
     SELECT DISTINCT * FROM Joins j, MeetingRoomsAffected m
     WHERE j.date < date'2022-01-28' AND j.date >= date '2022-01-28' - INTERVAL '3 DAYS'
@@ -97,12 +61,13 @@ CloseContacts as (
     AND j.time = m.time /*same time; same session*/
 )
 SELECT * FROM CloseContacts;
--- TEST QUERY:
+
+-- TEST CASE 2a:
 SELECT * FROM declare_health(450, '2022-01-28', 35);
 SELECT * FROM contact_tracing(450, '2022-01-28');
 SELECT * FROM Sessions WHERE booker_eid = 450 AND date > '2022-01-28';
 SELECT * FROM Employees WHERE eid in (1,2,3);
- --- Booker declares fever
+ --- TEST CASE 2b: Booker declares fever  --> cc_end_date should be updated and session on 2022-01-29 will be deleted
 SELECT * FROM declare_health(450, '2022-01-28', 41);
 SELECT * FROM contact_tracing(450, '2022-01-28');
 SELECT * FROM Sessions WHERE booker_eid = 450 AND date > '2022-01-28';
