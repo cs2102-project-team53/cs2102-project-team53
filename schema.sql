@@ -15,7 +15,7 @@ CREATE TABLE Employees (
 	office_number NUMERIC,
     resigned_date DATE,
     cc_end_date DATE,
-    FOREIGN KEY (did) REFERENCES Departments(did)
+    FOREIGN KEY (did) REFERENCES Departments(did) ON DELETE SET NULL
 );
 
 CREATE TABLE Junior (
