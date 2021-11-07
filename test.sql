@@ -189,7 +189,7 @@ SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
 SELECT * FROM join_meeting(4, 2, '2022-04-15','17:00:00', '17:59:00', 124);
 SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
 
--- Test 3: Try to joins meeting with time ending= invalid (The entry is added to all multi-hour slots or none)
+-- Test 3: Try to joins meeting with time ending= invalid (The entry is added to all multi-hour valid slots or none)
 SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
 SELECT * FROM join_meeting(4, 2, '2022-04-15','17:00:00', '19:59:00', 125);
 SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
@@ -240,6 +240,61 @@ SELECT * FROM joins where date = '2023-04-01'; --10 employees (full)
 -- Test 9: Active Close contact cannot join **TODO
 
 --------------------------------------------------------------------------------------------------------------------------------------------
+
+-- FUNCTION: view_future_meeting
+
+-- Test 1: Approve meetings and call function
+SELECT * FROM joins j, sessions s where j.date=s.date and j.eid=476 order by j.date;
+SELECT * FROM view_future_meeting('2021-02-20', 476);
+
+SELECT * FROM approve_meeting(2, 1, '2023-05-16', '17:00:00', '17:01:00', 451);
+SELECT * FROM approve_meeting(2,3, '2023-01-07', '16:00:00', '17:00:00', 478);
+
+SELECT * FROM view_future_meeting('2021-02-20', 476);
+SELECT * FROM joins j, sessions s where j.date=s.date and j.eid=476 order by j.date;
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+-- FUNCTION: leave_meeting
+
+-- Test 1: Leave a single hour meeting
+SELECT * FROM joins where date='2022-04-15';
+SELECT * FROM leave_meeting(4, 2, '2022-04-15','17:00:00', '18:00:00', 407);
+SELECT * FROM joins where date='2022-04-15';
+
+-- Test 2: Employee cannot leave approved meeting
+SELECT * FROM sessions where approver_eid IS NOT NULL;
+SELECT * FROM leave_meeting(2, 1, '2023-05-16','17:00:00', '18:00:00', 355);
+SELECT * FROM joins where date='2023-05-16';
+
+-- Test 3: People with fever on current day can leave meeting
+SELECT * FROM sessions where approver_eid IS NOT NULL;
+SELECT * FROM joins where date='2023-05-16';
+SELECT * FROM declare_health(51, CURRENT_DATE, 38.6); -- This employee is removed from all future meeting approved or not
+SELECT * FROM joins where date='2023-05-16';
+
+-- Test 4: Meeting is cancelled if Booker leaves
+SELECT * FROM sessions where date='2022-04-01';
+SELECT * FROM joins where date='2022-04-01';
+SELECT * FROM leave_meeting(3, 2, '2022-04-01','14:00:00', '15:00:00', 472);
+SELECT * FROM sessions where date='2022-04-01';
+SELECT * FROM joins where date='2022-04-01';
+
+-- Test 5: If booker has fever, then meeting is cancelled
+SELECT * FROM sessions where approver_eid IS NOT NULL;
+SELECT * FROM joins where date='2023-05-16';
+SELECT * FROM declare_health(355, CURRENT_DATE, 38.6);
+SELECT * FROM joins where date='2023-05-16';
+SELECT * FROM sessions where date='2023-05-16';
+
+-- Test 6: Active close contacts can leave meeting **TODO: Since the cc only if cc_end -7 <=cur_day <= cc_end need to add data
+
+-- Test 7: Leave multi-hour meeting (Can leave partially but must be valid. If any leave time is invalid then rollback) **TODO: add multi-hour data
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
 
 
 
