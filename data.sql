@@ -17,6 +17,8 @@ insert into Departments (did, dname) values (5, 'Accounting');
 insert into Departments (did, dname) values (6, 'Research and Development');
 insert into Departments (did, dname) values (7, 'Legal');
 insert into Departments (did, dname) values (8, 'Human Resources');
+insert into Departments (did, dname) values (9, 'Outreach');
+insert into Departments (did, dname) values (10, 'Investor Relations');
 
 -- Employees
 insert into Employees (eid, did, ename, email, mobile_number, home_number, office_number, resigned_date) values (1, 8, 'Naoma Sandland', 'nsandland0@webmd.com', '7956332597', '2209398828', '4924281092', null);

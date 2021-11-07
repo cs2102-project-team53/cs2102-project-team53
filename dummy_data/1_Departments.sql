@@ -17,3 +17,5 @@ insert into Departments (did, dname) values (5, 'Accounting');
 insert into Departments (did, dname) values (6, 'Research and Development');
 insert into Departments (did, dname) values (7, 'Legal');
 insert into Departments (did, dname) values (8, 'Human Resources');
+insert into Departments (did, dname) values (9, 'Outreach');
+insert into Departments (did, dname) values (10, 'Investor Relations');
