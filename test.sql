@@ -1,18 +1,10 @@
--- FUNCTION: declare_health
--- TEST CASE 1:
--- Expectation: Will perform contact tracing
-SELECT * FROM HealthDeclaration h WHERE h.eid = 500 ;
-SELECT * FROM declare_health(500, '2021-10-21', 41);
-SELECT * FROM HealthDeclaration h WHERE h.eid = 500 ;
-
---------------------------------------------------------------------------------------------------------------------------------------------
-
 -- FUNCTION: contact_tracing
 -- TEST CASE 1:
 -- Expectation: Will return a set of eids and these will be deleted from Joins
 
 SELECT * FROM declare_health(223, '2021-12-08', 37);
 UPDATE Employees SET cc_end_date = null;
+SELECT * FROM Employees WHERE eid in (1,20,223,400, 433);
 DELETE FROM Sessions WHERE date = '2021-12-07' AND room = 1 and floor = 4 AND time='16:00:00';
 SELECT * FROM book_room(4, 1, '2021-12-07', '16:00:00', '17:00:00', 433);
 SELECT * FROM join_meeting(4, 1, '2021-12-07', '16:00:00', '17:00:00', 1);
@@ -80,6 +72,7 @@ SELECT * FROM Employees WHERE eid in (1,2,3);
 -- Expectation: Do nothing cause no fever
 SELECT * from declare_health(450,'2022-01-28', 36);
 Update Employees SET cc_end_date = null;
+SELECT * FROM Employees WHERE eid in (1,2,3);
 SELECT * FROM Employees e, MeetingRooms mr WHERE mr.room = 2 AND mr.floor = 2 AND mr.did = e.did AND e.eid IN (Select * FROM Manager);
 DELETE FROM Sessions WHERE  time = '14:00:00' AND date = '2022-01-27' AND room =  2 AND floor = 2 and booker_eid = 450;
 SELECT * from book_room(2, 2, '2022-01-27', '14:00:00', '15:00:00', 450);
@@ -108,6 +101,12 @@ SELECT * FROM CloseContacts;
 SELECT * FROM declare_health(450, '2022-01-28', 35);
 SELECT * FROM contact_tracing(450, '2022-01-28');
 SELECT * FROM Sessions WHERE booker_eid = 450 AND date > '2022-01-28';
+SELECT * FROM Employees WHERE eid in (1,2,3);
+ --- Booker declares fever
+SELECT * FROM declare_health(450, '2022-01-28', 41);
+SELECT * FROM contact_tracing(450, '2022-01-28');
+SELECT * FROM Sessions WHERE booker_eid = 450 AND date > '2022-01-28';
+SELECT * FROM Employees WHERE eid in (1,2,3);
 --------------------------------------------------------------------------------------------------------------------------------------------
 
 -- FUNCTION: non_compliance
@@ -337,7 +336,7 @@ SELECT * FROM manager ORDER BY eid DESC LIMIT 5;
 
 -- Test 4: Cannot add employees without adding to junior, senior or manager
 -- Expected: ERROR:  An employee needs to be one of the three kinds of employees: junior, senior or manager
-INSERT INTO employees VALUES(1000, 1, 'Manual insert', 'Manualinsert@gmail.com' 90915245);
+INSERT INTO employees VALUES(1000, 1, 'Manual insert', 'Manualinsert@gmail.com', 90915245);
 
 -- Test 5: An employee cannot have two types
 -- Expected: ERROR:  An employee cannot be both a junior and a booker(senior/manager)
@@ -382,7 +381,7 @@ SELECT * FROM book_room(1, 1, '2021-11-07', '10:00:00', '14:00:00', 299);
 -- Employee booking the room automatically joins the meeting
 -- EXPECTED - An entry corresponding to the book_room() details is found in Joins, where the booker is added into Joins
 SELECT * FROM book_room(1, 1, '2021-12-19', '10:00:00', '14:00:00', 319);
-SELECT * FROM Joins WHERE eid = 319
+SELECT * FROM Joins WHERE eid = 319;
 
 --------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -403,20 +402,20 @@ SELECT * FROM book_room(1, 1, '2021-12-20', '10:00:00', '14:00:00', 320);
 -- Remove participants of the meeting after unbook_room()
 
 -- Shows the table containing all the participants of this meeting in the Joins table
-select * from joins where date = '2022-01-01' AND time = '16:00:00' AND room = 1 AND floor = 4
+select * from joins where date = '2022-01-01' AND time = '16:00:00' AND room = 1 AND floor = 4;
 
 -- Unbooks this meeting
 select * from unbook_room(4, 1, '2022-01-01', '16:00:00', '17:00:00', 443);
 
 -- Participants are now removed from the Joins table
-select * from joins where date = '2022-01-01' AND time = '16:00:00' AND room = 1 AND floor = 4
+select * from joins where date = '2022-01-01' AND time = '16:00:00' AND room = 1 AND floor = 4;
 
 --------------------------------------------------------------------------------------------------------------------------------------------
 
 -- FUNCTION: approve_meeting()
 -- Only manager can approve meetings
 -- EXPECTED - ERROR:  Employee is not a Manager (eid 450 is not a manager)
-select * from approve_meeting(1, 3, '2022-01-16', '09:00:00', '10:00:00', 450)
+select * from approve_meeting(1, 3, '2022-01-16', '09:00:00', '10:00:00', 450);
 
 --------------------------------------------------------------------------------------------------------------------------------------------
 
