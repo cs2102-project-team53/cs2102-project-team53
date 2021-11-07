@@ -504,7 +504,7 @@ BEGIN
     has_resigned := (SELECT e.resigned_date FROM Employees e WHERE e.eid = NEW.booker_eid)  IS NOT NULL;
 	
 	-- Check if current_date falls betwwen cc_end_date cc_end_date-7 to see if employee is an active close contact
-    SELECT COUNT(*) INTO is_close_contact FROM Employees e WHERE e.eid=OLD.eid AND e.cc_end_date >= CURRENT_DATE AND (e.cc_end_date - INTERVAL '7 DAYS')<=CURRENT_DATE;
+    SELECT COUNT(*) INTO is_close_contact FROM Employees e WHERE e.eid=NEW.booker_eid AND e.cc_end_date >= CURRENT_DATE AND (e.cc_end_date - INTERVAL '7 DAYS')<=CURRENT_DATE;
     
     IF has_fever THEN
         RAISE EXCEPTION 'Bookers with a fever cannot book a room';
@@ -676,7 +676,7 @@ BEGIN
     );
 
     -- Check if current_date falls betwwen cc_end_date cc_end_date-7 to see if employee is an active close contact
-    SELECT COUNT(*) INTO is_close_contact FROM Employees e WHERE e.eid=OLD.eid AND e.cc_end_date >= CURRENT_DATE AND (e.cc_end_date - INTERVAL '7 DAYS')<=CURRENT_DATE;
+    SELECT COUNT(*) INTO is_close_contact FROM Employees e WHERE e.eid=NEW.eid AND e.cc_end_date >= CURRENT_DATE AND (e.cc_end_date - INTERVAL '7 DAYS')<=CURRENT_DATE;
                                    
   
     IF has_fever THEN
@@ -947,13 +947,9 @@ BEGIN
 		AND j.room = m.room
 		AND j.floor = m.floor /*same room*/
 	)
---    	DELETE FROM Joins j WHERE j.eid IN (SELECT * FROM CloseContacts)
--- 	AND j.date >= trace_date + INTERVAL '1000 DAYS' AND j.date <= trace_date + INTERVAL '7 DAYS';
 
-    UPDATE Employees SET cc_end_date = trace_date + INTERVAL '7 DAYS' WHERE
-        eid IN (SELECT * FROM CloseContacts) AND (cc_end_date < trace_date + INTERVAL '7 DAYS' OR cc_end_date IS NULL);
-
-    -- Deleting close contacts from future meetings --> Done in trigger function below
+    UPDATE Employees SET cc_end_date = trace_date WHERE
+        eid IN (SELECT * FROM CloseContacts);
 
     RETURN QUERY
 	-- Find all approved meetings FROM the past 3 days which employee was part of
@@ -963,7 +959,6 @@ BEGIN
         AND j.date < trace_date AND j.date >= trace_date - INTERVAL '3 DAYS'
         AND s.approver_eid IS NOT NULL
 	),
-
 	-- Find close contacts: employees in the same approved meeting room FROM the past 3 (i.e., FROM day D-3 to day D) days
     CloseContacts as (
 		SELECT DISTINCT j.eid FROM Joins j, MeetingRoomsAffected m
@@ -973,10 +968,9 @@ BEGIN
         AND j.time = m.time /*same time; same session*/
 	)
 	SELECT * FROM CloseContacts;
-
     -- √ If the employee is the one booking the room, the booking is cancelled, approved or not.
  	DELETE FROM Sessions WHERE (booker_eid = eid_in AND date >= trace_date AND date >= CURRENT_DATE );
-	-- √ The employee is removed FROM all future meeting room booking, approved or not. √
+-- 	-- √ The employee is removed FROM all future meeting room booking, approved or not. √
      DELETE FROM Joins WHERE (eid = eid_in AND date >= trace_date AND date >= CURRENT_DATE);
 	END IF;
 END

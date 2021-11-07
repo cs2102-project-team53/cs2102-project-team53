@@ -9,13 +9,13 @@ SELECT * FROM HealthDeclaration h WHERE h.eid = 500 ;
 -- FUNCTION: contact_tracing
 -- TEST CASE 1:
 -- Expectation: Will return a set of eids and these will be deleted from Joins
---DELETE FROM Sessions  WHERE date = '2022-01-01' AND room = 1 and floor = 4 AND time='16:00:00';
---INSERT INTO Sessions  (time, date, room, floor, booker_eid) VALUES ('16:00:00', '2022-01-01',1,  4, 433);
--- insert into Joins (eid, time, date, room, floor) values (1, '16:00:00', '2022-01-01', 1, 4);
--- insert into Joins (eid, time, date, room, floor) values (223, '16:00:00', '2022-01-01', 1, 4);
--- insert into Joins (eid, time, date, room, floor) values (400, '16:00:00', '2022-01-01', 1, 4);
--- insert into Joins (eid, time, date, room, floor) values (20, '16:00:00', '2022-01-01', 1, 4);
- SELECT * FROM approve_meeting(4, 1, '2022-01-01', '16:00:00', '17:00:00', 482);
+DELETE FROM Sessions  WHERE date = '2022-01-01' AND room = 1 and floor = 4 AND time='16:00:00';
+INSERT INTO Sessions  (time, date, room, floor, booker_eid) VALUES ('16:00:00', '2022-01-01',1,  4, 433);
+insert into Joins (eid, time, date, room, floor) values (1, '16:00:00', '2022-01-01', 1, 4);
+insert into Joins (eid, time, date, room, floor) values (223, '16:00:00', '2022-01-01', 1, 4);
+insert into Joins (eid, time, date, room, floor) values (400, '16:00:00', '2022-01-01', 1, 4);
+insert into Joins (eid, time, date, room, floor) values (20, '16:00:00', '2022-01-01', 1, 4);
+SELECT * FROM approve_meeting(4, 1, '2022-01-01', '16:00:00', '17:00:00', 482);
 WITH MeetingRoomsAffected as (
     SELECT m.room, m.floor, s.time FROM MeetingRooms m NATURAL JOIN Joins j NATURAL JOIN Sessions s
     WHERE j.eid = 223
@@ -32,7 +32,11 @@ CloseContacts as (
     AND j.time = m.time /*same time; same session*/
 )
 SELECT * FROM CloseContacts;
--- TEST QUERY: INSERT INTO HealthDeclaration (date, eid, temp) VALUES ('2021-01-02', 223, 41.2);
+-- TEST QUERY:
+
+DELETE FROM healthdeclaration WHERE date > '2021-01-02' AND eid = 223;
+INSERT INTO HealthDeclaration (date, eid, temp) VALUES ('2022-01-02', 223, 41.2);
+
 WITH MeetingRoomsAffected as (
     SELECT m.room, m.floor, s.time FROM MeetingRooms m NATURAL JOIN Joins j NATURAL JOIN Sessions s
     WHERE j.eid = 223
@@ -49,7 +53,7 @@ CloseContacts as (
     AND j.time = m.time /*same time; same session*/
 )
 SELECT * FROM CloseContacts NATURAL JOIN Employees e;
-
+SELECT * FROM Employees WHERE eid in (1,20,223,400, 433);
 -- TEST CASE 2:
 -- Expectation: Will do nothing because no fever
 -- SELECT * FROM approve_meeting(2,2, '2022-01-27', '14:00:00', '15:00:00', 453);
