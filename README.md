@@ -9,7 +9,7 @@
 - [`proc.sql`](https://github.com/cs2102-project-team53/cs2102-project-team53/blob/main/proc.sql) - Functions and Triggers
 - [`data.sql`](https://github.com/cs2102-project-team53/cs2102-project-team53/blob/main/data.sql) - Dummy Data (Generated using the `generate.py` script) 
 - [`test.sql`](https://github.com/cs2102-project-team53/cs2102-project-team53/blob/main/test.sql) - Test queries
-- [`Final Report`](https://github.com/cs2102-project-team53/cs2102-project-team53/blob/main/Final%20Report.pdf) - Final report summarising implementation/design details and roles/responsibilites
+- [`Final Report.pdf`](https://github.com/cs2102-project-team53/cs2102-project-team53/blob/main/Final%20Report.pdf) - Final report summarising implementation/design details and roles/responsibilites
 
 
 
