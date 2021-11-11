@@ -293,20 +293,20 @@ SELECT * FROM sessions where date='2023-05-16';
 --------------------------------------------------------------------------------------------------------------------------------------------
 
 -- FUNCTION: add_employee
--- Test 1: New junior will be added
+-- Test 1: New junior will be added with an eid of 501
 SELECT * FROM employees ORDER BY eid DESC LIMIT 5;
 SELECT * FROM add_employee('Test Junior', 90915245, 'JUNIOR', 1);
 SELECT * FROM employees ORDER BY eid DESC LIMIT 5;
 SELECT * FROM junior ORDER BY eid DESC LIMIT 5;
 
--- Test 2: New senior will be added
-SELECT * FROM employees ORDER BY eid DESC;
+-- Test 2: New senior will be added with an eid of 502
+SELECT * FROM employees ORDER BY eid DESC LIMIT 5;
 SELECT * FROM add_employee('Test Senior', 90915245, 'SENIOR', 1);
-SELECT * FROM employees ORDER BY eid DESC;
+SELECT * FROM employees ORDER BY eid DESC LIMIT 5;
 SELECT * FROM booker ORDER BY eid DESC LIMIT 5;
 SELECT * FROM senior ORDER BY eid DESC LIMIT 5;
 
--- Test 3: New manager will be added
+-- Test 3: New manager will be added with an eid of 503
 SELECT * FROM employees ORDER BY eid DESC LIMIT 5;
 SELECT * FROM add_employee('Test Manager', 90915245, 'MANAGER', 1);
 SELECT * FROM employees ORDER BY eid DESC LIMIT 5;
@@ -321,6 +321,10 @@ INSERT INTO employees VALUES(1000, 1, 'Manual insert', 'Manualinsert@gmail.com',
 -- Expected: ERROR:  An employee cannot be both a junior and a booker(senior/manager)
 INSERT INTO junior values(503);
 
+-- Test 6: An employee cannot have two types
+-- Expected: ERROR:  An employee cannot be both a senior and a manager
+INSERT INTO senior values(503);
+
 --------------------------------------------------------------------------------------------------------------------------------------------
 
 -- FUNCTION: remove_employee
@@ -329,10 +333,15 @@ SELECT * FROM employees WHERE resigned_date IS NOT NULL ORDER BY resigned_date D
 SELECT * FROM remove_employee(501, '2021-11-07');
 SELECT * FROM employees WHERE resigned_date IS NOT NULL ORDER BY resigned_date DESC LIMIT 5;
 
+-- Test 2: Manual deletions are prohibited
+-- Expected: ERROR:  Manual deletion of employee(s) are prohibited.
+DELETE FROM employees WHERE eid=501;
+
 --------------------------------------------------------------------------------------------------------------------------------------------
 
 -- FUNCTION: view_manager_report
 -- Test 1: Manager report
+SELECT * FROM manager WHERE eid=500;
 SELECT did FROM employees WHERE eid=500;
 SELECT s.date, s.time, m.did, s.approver_eid FROM Sessions s NATURAL JOIN MeetingRooms m WHERE s.approver_eid IS NULL AND m.did=6 AND '2021-02-04' <= s.date ORDER BY s.date, s.time ASC;
 SELECT * FROM view_manager_report('2021-02-04', 500);
@@ -344,16 +353,27 @@ SELECT * FROM view_manager_report('2021-02-04', 400);
 --------------------------------------------------------------------------------------------------------------------------------------------
 
 -- FUNCTION: book_room()
+-- Positive case
+select * from book_room(1, 1, '2021-11-15', '14:00:00', '15:00:00', 454);
+select * from sessions where date = '2021-11-15' and room = 1 and floor = 1;
+select * from sessions where date = '2021-11-15' and room = 1 and floor = 1;
+
+--------------------------------------------------------------------------------------------------------------------------------------------
 -- Booker must not have a fever
 -- EXPECTED - ERROR:  Bookers with a fever cannot book a room
+SELECT * FROM Employees WHERE eid = 318;
 SELECT * FROM declare_health(318, '2021-11-07', 38.0);
+SELECT * FROM HealthDeclaration WHERE eid = 318;
 SELECT * FROM book_room(1, 1, '2021-11-07', '10:00:00', '14:00:00', 318);
 
 --------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Only Booker (ISA senior/manager) can book a room
 -- EXPECTED - ERROR:  Employee is not a Booker(Senior/Manager)
-SELECT * FROM book_room(1, 1, '2021-11-07', '10:00:00', '14:00:00', 299);
+-- eid 454 is a Manager
+-- SELECT * FROM Manager WHERE eid = 454
+select * from book_room(1, 1, '2021-11-16', '14:00:00', '15:00:00', 454);
+SELECT * FROM Sessions WHERE booker_eid = 454 AND floor = 1 AND room = 1;
 
 --------------------------------------------------------------------------------------------------------------------------------------------
 
