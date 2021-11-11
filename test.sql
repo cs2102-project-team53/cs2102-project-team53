@@ -11,6 +11,7 @@ SELECT * FROM join_meeting(4, 1, '2021-12-07', '16:00:00', '17:00:00', 20);
 SELECT * FROM join_meeting(4, 1, '2021-12-07', '16:00:00', '17:00:00', 223);
 SELECT * FROM join_meeting(4, 1, '2021-12-07', '16:00:00', '17:00:00', 400);
 SELECT * FROM approve_meeting(4, 1, '2021-12-07', '16:00:00', '17:00:00', 482);
+
 -- Suppose date of fever is going to be '2021-12-08'
 WITH MeetingRoomsAffected as (
     SELECT m.room, m.floor, s.time FROM MeetingRooms m NATURAL JOIN Joins j NATURAL JOIN Sessions s
@@ -163,10 +164,10 @@ SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
 SELECT * FROM join_meeting(4, 2, '2022-04-15','17:00:00', '17:59:00', 124);
 SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
 
--- Test 2: Join a multi hour meeting **TODO: add data
-SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
-SELECT * FROM join_meeting(4, 2, '2022-04-15','17:00:00', '17:59:00', 124);
-SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+-- Test 2: Join a multi hour meeting
+SELECT * FROM book_room(1, 1, '2021-11-20', '10:00:00', '14:00:00', 318);
+SELECT * FROM join_meeting(1, 1, '2021-11-20', '10:00:00', '14:00:00', 333);
+
 
 -- Test 3: Try to joins meeting with time ending= invalid (The entry is added to all multi-hour valid slots or none)
 SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
@@ -174,10 +175,8 @@ SELECT * FROM join_meeting(4, 2, '2022-04-15','17:00:00', '19:59:00', 125);
 SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
 
 
--- Test 4: Cannot join past meetings **TODO: add past meeting data
-SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
-SELECT * FROM join_meeting(4, 2, '2022-04-15','17:00:00', '17:59:00', 124);
-SELECT * FROM joins j where j.time='17:00:00' AND j.date='2022-04-15';
+-- Test 4: Cannot join past meetings
+SELECT * FROM join_meeting(4, 2, '2019-04-15','17:00:00', '17:59:00', 124);
 
 -- Test 5: Cannot join with fever
 SELECT * FROM joins j where j.time='12:00:00' AND j.date='2022-01-07';
@@ -216,7 +215,25 @@ SELECT * FROM join_meeting(2, 3, '2023-04-01','18:00:00', '19:00:00', 304);
 SELECT * FROM joins where date = '2023-04-01'; --10 employees (full)
 
 
--- Test 9: Active Close contact cannot join **TODO
+
+SELECT * FROM book_room(1, 1, '2021-11-12', '10:00:00', '14:00:00', 318);
+SELECT * FROM join_meeting(1, 1, '2021-11-12', '10:00:00', '14:00:00', 333);
+SELECT * FROM join_meeting(1, 1, '2021-11-12', '10:00:00', '14:00:00', 332);
+select * from approve_meeting(1, 1, '2021-11-12', '10:00:00', '14:00:00', 475);
+
+SELECT * FROM joins where date='2021-11-12';
+
+SELECT * FROM book_room(1, 2, '2021-11-14', '10:00:00', '14:00:00', 366);
+
+SELECT * FROM joins where date='2021-11-14';
+
+SELECT * FROM declare_health(333, '2021-11-13', 38.6);
+
+SELECT * FROM employees where eid=333
+
+SELECT * FROM join_meeting(1, 2, '2021-11-14', '10:00:00', '14:00:00', 332);
+
+SELECT * FROM joins where date='2021-11-14';
 
 --------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -266,9 +283,6 @@ SELECT * FROM declare_health(355, CURRENT_DATE, 38.6);
 SELECT * FROM joins where date='2023-05-16';
 SELECT * FROM sessions where date='2023-05-16';
 
--- Test 6: Active close contacts can leave meeting **TODO: Since the cc only if cc_end -7 <=cur_day <= cc_end need to add data
-
--- Test 7: Leave multi-hour meeting (Can leave partially but must be valid. If any leave time is invalid then rollback) **TODO: add multi-hour data
 
 --------------------------------------------------------------------------------------------------------------------------------------------
 
