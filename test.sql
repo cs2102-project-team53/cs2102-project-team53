@@ -339,16 +339,27 @@ SELECT * FROM view_manager_report('2021-02-04', 400);
 --------------------------------------------------------------------------------------------------------------------------------------------
 
 -- FUNCTION: book_room()
+-- Positive case
+select * from book_room(1, 1, '2021-11-15', '14:00:00', '15:00:00', 454);
+select * from sessions where date = '2021-11-15' and room = 1 and floor = 1;
+select * from sessions where date = '2021-11-15' and room = 1 and floor = 1;
+
+--------------------------------------------------------------------------------------------------------------------------------------------
 -- Booker must not have a fever
 -- EXPECTED - ERROR:  Bookers with a fever cannot book a room
+SELECT * FROM Employees WHERE eid = 318;
 SELECT * FROM declare_health(318, '2021-11-07', 38.0);
+SELECT * FROM HealthDeclaration WHERE eid = 318;
 SELECT * FROM book_room(1, 1, '2021-11-07', '10:00:00', '14:00:00', 318);
 
 --------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Only Booker (ISA senior/manager) can book a room
 -- EXPECTED - ERROR:  Employee is not a Booker(Senior/Manager)
-SELECT * FROM book_room(1, 1, '2021-11-07', '10:00:00', '14:00:00', 299);
+-- eid 454 is a Manager
+-- SELECT * FROM Manager WHERE eid = 454
+select * from book_room(1, 1, '2021-11-16', '14:00:00', '15:00:00', 454);
+SELECT * FROM Sessions WHERE booker_eid = 454 AND floor = 1 AND room = 1;
 
 --------------------------------------------------------------------------------------------------------------------------------------------
 
