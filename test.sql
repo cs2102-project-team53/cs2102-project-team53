@@ -319,6 +319,10 @@ SELECT * FROM employees WHERE resigned_date IS NOT NULL ORDER BY resigned_date D
 SELECT * FROM remove_employee(501, '2021-11-07');
 SELECT * FROM employees WHERE resigned_date IS NOT NULL ORDER BY resigned_date DESC LIMIT 5;
 
+-- Test 2: Manual deletions are prohibited
+-- Expected: ERROR:  Manual deletion of employee(s) are prohibited.
+DELETE FROM employees WHERE eid=501;
+
 --------------------------------------------------------------------------------------------------------------------------------------------
 
 -- FUNCTION: view_manager_report
